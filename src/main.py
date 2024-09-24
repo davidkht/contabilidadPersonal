@@ -22,10 +22,12 @@ def get_resource_path():
     return base_path
 
 # Guarda la ruta del script para su uso posterior en la aplicación
-script_directory=get_resource_path()
+script_directory = get_resource_path()
 
 # Conexión a la base de datos SQLite
-database=os.path.join(script_directory,'..',r'databases\deudas.db')
+database = os.path.join(script_directory,'..','databases','deudas.db')
+
+
 
 # database = r"C:\Users\K\Documents\Proyectos\contabilidad\databases\deudas.db"
 with sqlite3.connect(database) as conn:

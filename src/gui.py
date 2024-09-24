@@ -1,12 +1,10 @@
+import os
+import main
+from main import script_directory
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
-
-import os
-import main
-from main import script_directory
-
 
 class App(tk.Tk):
 
@@ -69,12 +67,14 @@ class App(tk.Tk):
 
         # Inserta los datos del DataFrame en el TreeView fila por fila.
         for index, row in df.iterrows():
+            # Formatear el valor de 'monto' como moneda
+            row['monto'] = f"${float(row['monto']):,.2f}"
             self.tree.insert("", tk.END, values=list(row))
 
 
         scrollbar = ttk.Scrollbar(self.tree_frame, orient=tk.VERTICAL, command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
-        scrollbar.grid(row=0,column=1)
+        scrollbar.grid(row=0,column=1,sticky='ns')
 
     def icono_e_imagen(self):
         # Obtén el directorio del script
@@ -363,24 +363,24 @@ class EditarFrame(ttk.Frame):
         name_label = ttk.Label(frame_test, text=f"{values[1]} {values[2]}",font=bold_font)
         name_label.grid(row=0, column=0, columnspan=2, sticky='nsew', padx=10, pady=10)
 
-        ttk.Label(frame_test, text="Teléfono").grid(row=1, column=0, pady=5, padx=15)
-        ttk.Label(frame_test, text="Email").grid(row=2, column=0, pady=5, padx=15)
+        ttk.Label(frame_test, text="Teléfono").grid(row=1, column=0, pady=5, padx=(15,0),sticky='w')
+        ttk.Label(frame_test, text="Email").grid(row=2, column=0, pady=5, padx=(15,0),sticky='w')
 
-        entry_tel = ttk.Entry(frame_test, textvariable=self.tel_var, width=30)
-        entry_tel.grid(row=1, column=1, pady=5, padx=15)
+        entry_tel = ttk.Entry(frame_test, textvariable=self.tel_var, width=25)
+        entry_tel.grid(row=1, column=1, pady=5, padx=(0,15),sticky='w')
 
-        entry_email = ttk.Entry(frame_test, textvariable=self.email_var, width=30)
-        entry_email.grid(row=2, column=1, pady=5, padx=15)
+        entry_email = ttk.Entry(frame_test, textvariable=self.email_var, width=25)
+        entry_email.grid(row=2, column=1, pady=5, padx=(0,15),sticky='w')
 
         boton_ok = ttk.Button(frame_test, text='OK', width=20,
                               command=lambda: self.aceptar_cambios_editar_registro(
                                   values[1], values[2], self.tel_var.get(), self.email_var.get()))
 
-        boton_ok.grid(row=3, column=1, pady=10, padx=15, sticky='nsew')
+        boton_ok.grid(row=3, column=1, pady=10, padx=(5,20), sticky='e')
 
         boton_cancelar = ttk.Button(frame_test, text='Cancelar', width=20,
                                     command=self.master.home)
-        boton_cancelar.grid(row=3, column=0, pady=10, padx=15, sticky='nsew')
+        boton_cancelar.grid(row=3, column=0, pady=10, padx=(20,5), sticky='w')
 
     def aceptar_cambios_editar_registro(self, nombre, apellido, telefono, email):
 
@@ -439,7 +439,7 @@ class MovimientoFrame(ttk.Frame):
 
 
         #Entries
-        self.deuda_var = tk.DoubleVar(value=float(self.monto))
+        self.deuda_var = tk.DoubleVar(value=float(self.monto.replace("$", "").replace(",", "")))
         deuda_entry=ttk.Entry(self.mov_frame,textvariable=self.deuda_var,state='readonly')
         deuda_entry.grid(row=1,column=1,padx=10,pady=10,sticky='nsew')
         
@@ -537,12 +537,14 @@ class MovimientoFrame(ttk.Frame):
 
         # Inserta los datos del DataFrame en el TreeView fila por fila.
         for index, row in df.iterrows():
+            row['deuda_total'] = f"${float(row['deuda_total']):,.2f}"
+            row['transaccion'] = f"${float(row['transaccion']):,.2f}"
             self.tree.insert("", tk.END, values=list(row))
 
 
         scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
-        scrollbar.grid(row=0,column=1)
+        scrollbar.grid(row=0,column=1,sticky='ns')
 
     def save_and_close(self):
        
@@ -683,12 +685,14 @@ class DetallesFrame(ttk.Frame):
 
         # Inserta los datos del DataFrame en el TreeView fila por fila.
         for index, row in df.iterrows():
+            row['deuda_total'] = f"${float(row['deuda_total']):,.2f}"
+            row['transaccion'] = f"${float(row['transaccion']):,.2f}"
             self.tree.insert("", tk.END, values=list(row))
 
 
         scrollbar = ttk.Scrollbar(tree_frame, orient=tk.VERTICAL, command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
-        scrollbar.grid(row=0,column=1)
+        scrollbar.grid(row=0,column=1,sticky='ns')
 
 class NumericEntry(ttk.Entry):
     def __init__(self, master=None, **kwargs):
