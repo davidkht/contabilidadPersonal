@@ -174,7 +174,7 @@ class App(tk.Tk):
         if selected_item:
             item = self.tree.item(selected_item)
             values = item['values']
-            verificacion=messagebox.askyesno("Borrar Registro?","Está seguro de borrar el registro?",options=(True,False))
+            verificacion=messagebox.askyesno("Borrar Registro?","Está seguro de borrar el registro?")
             if verificacion:
                 main.borrar_usuario(values[1],values[2])
                 self.place_tree()
