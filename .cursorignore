@@ -2,3 +2,31 @@
 accountingWeb/
 # Local .env (never commit). Real secrets live in ~/.config/project-secrets/
 .env
+# Local-only AI overrides (shared config stays visible)
+.claude/settings.local.json
+CLAUDE.local.md
+
+# Dependencies & env
+.venv/
+node_modules/
+
+# Build / CDK
+cdk.out/
+.cdk.staging/
+dist/
+build/
+
+# Caches
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Logs & temp
+*.log
+tmp/
+
+# Large data
+*.zip
+*.sqlite
+data/raw/

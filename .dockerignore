@@ -1,2 +1,32 @@
 # Local .env (never commit). Real secrets live in ~/.config/project-secrets/
 .env
+
+# ─── devharness / environment secrets ──────────────────────
+
+# Dependencies (reinstalled in container)
+.venv/
+venv/
+node_modules/
+
+# Build artifacts
+cdk.out/
+.cdk.staging/
+dist/
+build/
+
+# Caches
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# VCS & AI harness (not needed in images)
+.git/
+.agents/
+.claude/
+.cursor/
+.vscode/
+
+# Logs & temp
+*.log
+tmp/

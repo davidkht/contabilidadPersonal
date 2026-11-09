@@ -2,3 +2,12 @@ src/.env
 venv/
 # Local .env (never commit). Real secrets live in ~/.config/project-secrets/
 .env
+
+# ─── devharness / AI harness ───────────────────────────────
+.claude/settings.local.json
+CLAUDE.local.md
+.venv
+# Generated MCP configs may contain resolved auth headers; keep local only.
+.mcp.json
+.cursor/mcp.json
+.claude/.mcp.json

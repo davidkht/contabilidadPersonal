@@ -1,0 +1,14 @@
+---
+description: Load shared project instructions from AGENTS.md
+alwaysApply: true
+---
+
+# Project context
+
+Follow **`AGENTS.md`** at the repository root for all conventions, architecture, and commands.
+
+**Python projects use uv.** Run tools via `uv run` (e.g. `uv run pytest`, `uv run ruff check .`). Never activate or deactivate virtual environments manually — use `uv sync` and `uv run`.
+
+Subagents live in **`.agents/agents/`** (canonical — edit there only). `.claude/agents/` and `.cursor/agents/` are symlinks for tool discovery; do not duplicate files.
+
+Skills live in **`.agents/skills/`** (e.g. `uv-python`). `.claude/skills/` and `.cursor/skills/` are symlinks.

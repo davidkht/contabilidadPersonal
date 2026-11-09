@@ -1,0 +1,12 @@
+# project MCP selection (catalog defaults are in ~/.config/devharness/mcp.servers.yaml)
+# Core MCP servers are enabled automatically from the store catalog.
+# Add optional servers by name:
+# include: [linear, sentry]
+# Disable core servers for this repo (rare):
+# disable: [github]
+#
+# You can also define repo-only servers here under `servers:`.
+
+include: []
+disable: []
+servers: []
