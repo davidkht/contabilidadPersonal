@@ -1,0 +1,1 @@
+- [API layer gotchas](project_api_layer_gotchas.md) — catch-all /api 404 shadows late routes; import side effects; sync handlers; test helper layout

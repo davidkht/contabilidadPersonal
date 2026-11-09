@@ -11,3 +11,10 @@ CLAUDE.local.md
 .mcp.json
 .cursor/mcp.json
 .claude/.mcp.json
+
+# ─── App web ───────────────────────────────────────────────
+# Base de datos viva, secretos y credenciales generadas
+data/
+__pycache__/
+.pytest_cache/
+.ruff_cache/

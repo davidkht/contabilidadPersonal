@@ -1,10 +1,42 @@
 [project]
 name = "contabilidadpersonal"
-version = "0.1.0"
-description = "Add your description here"
+version = "2.0.0"
+description = "Control de deudas personales: API FastAPI + SQLite con autenticación JWT y frontend web."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "matplotlib>=3.10.9",
-    "pandas>=3.0.3",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "pyjwt>=2.9",
+    "pwdlib[argon2]>=0.2.1",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "httpx>=0.27",
+    "ruff>=0.8",
+]
+# App de escritorio antigua (legacy/src). Instalar con: uv sync --group legacy
+legacy = [
+    "matplotlib>=3.9,<4",
+    "pandas>=2.2.3",
+    "pillow>=10.4",
+    "PySide6>=6.6.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["legacy"]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI usa llamadas en argumentos por defecto (Depends/Query/Body) por diseño.
+"src/api/**/*.py" = ["B008"]
+"src/core/auth.py" = ["B008"]

@@ -1,0 +1,31 @@
+# Un solo servicio: FastAPI sirve la API (/api) y el frontend estático (/).
+#   PC:       ./app.sh            (primer plano; Ctrl+C lo apaga todo)
+#   Servidor: ./app.sh server     (segundo plano, se reinicia solo; requiere .env, ver .env.example)
+name: contabilidad
+
+services:
+  app:
+    build: .
+    image: contabilidad-personal:latest
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      # IPs de proxies inversos de confianza para leer X-Forwarded-For (ej. "172.16.0.0/12")
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
+    volumes:
+      - ./data:/data
+      # Base de datos de la app antigua, solo lectura: se importa una vez si /data está vacío.
+      - ./databases:/legacy:ro
+    user: "${UID:-1000}:${GID:-1000}"
+    restart: ${RESTART_POLICY:-no}
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 10s

@@ -34,43 +34,22 @@ Pre-approved shell permissions assume this environment. Prefer `uv run`.
 
 ### Overview
 
-Add your description here
+Control de deudas personales: API FastAPI + SQLite (JWT, roles admin/usuario) y frontend estático
+en `web/` (ES modules, sin build). Ver `README.md`. `legacy/` es un respaldo de la app de escritorio:
+no editar.
 
 ### Commands
 
 ```bash
-# Setup
-uv sync
-
-# Tests
-uv run pytest
-
-# NOTE: legacy requirements*.txt present — migrate to pyproject + uv sync
+uv sync                 # dependencias
+./app.sh dev            # API + web con recarga (http://localhost:8000, docs en /api/docs)
+./app.sh                # Docker en primer plano (Ctrl+C apaga todo)
+uv run pytest           # tests
+uv run ruff check src tests
 ```
 
 ### Layout
 
-```
-contabilidadpersonal/
-  databases/
-  docs/
-  src/
-  web/
-```
-
-### Stack
-
-- Python 3.12
-
-### AI harness
-
-Skills are canonical under **`.agents/skills/`** (symlinked into `.claude/skills` and `.cursor/skills`). Subagents are real files in **`.cursor/agents/`** (Cursor-native) and **`.claude/agents/`** (Claude Code; also read by Cursor for compatibility).
-
-- Subagents installed: backend-feature-architect, infra-architect, api-backend-architect, frontend-component-architect, frontend-state-architect
-- Skills installed: uv-python, vite-react
-- Portable pattern docs: `.agents/context/` (mode-filtered). Project `docs/` supplements when present.
-- MCP: edit `.agents/mcp.servers.yaml`, then `dvh mcp`.
-
-### Project docs
-
-_Add product-specific docs under `docs/` as needed._
+`src/api` (HTTP, rutas finas) → `src/services` (casos de uso + DTOs) → `src/ports` (Protocol) ←
+`src/db` (SQLite). Composition root: `src/core/dependencies.py`. Las rutas no importan `src.models`
+ni `src.db`.
