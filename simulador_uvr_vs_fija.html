@@ -1,0 +1,1190 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simulador UVR vs Tasa Fija</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <style>
+      :root {
+        --bg: #0f1117;
+        --surface: #1a1d27;
+        --surface2: #22263a;
+        --border: #2e3248;
+        --blue: #4f8ef7;
+        --green: #34d39a;
+        --danger: #f06060;
+        --purple: #9b8afc;
+        --warn: #f5a623;
+        --text: #e8eaf0;
+        --text2: #8b90a8;
+        --text3: #555b75;
+        --radius: 10px;
+        --radius-sm: 6px;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+        min-height: 100vh;
+      }
+
+      .header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 10px 16px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .header-title {
+        font-size: 15px;
+        font-weight: 700;
+      }
+      .header-meta {
+        font-size: 11px;
+        color: var(--text2);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+      }
+      .header-meta span {
+        font-variant-numeric: tabular-nums;
+      }
+
+      .layout {
+        display: flex;
+        min-height: calc(100vh - 52px);
+      }
+      .sidebar {
+        width: 300px;
+        min-width: 280px;
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        padding: 14px;
+        flex-shrink: 0;
+        overflow-y: auto;
+      }
+      .content {
+        flex: 1;
+        padding: 14px;
+        overflow-y: auto;
+        max-width: 100%;
+      }
+
+      .section-title {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text3);
+        margin-bottom: 8px;
+      }
+      .ctrl-group {
+        margin-bottom: 12px;
+      }
+      .ctrl-label {
+        font-size: 11px;
+        color: var(--text2);
+        margin-bottom: 5px;
+      }
+      .hint {
+        font-size: 10px;
+        color: var(--text3);
+        margin-top: 4px;
+        line-height: 1.45;
+      }
+      #errMsg {
+        white-space: pre-line;
+        line-height: 1.5;
+        font-size: 11px;
+        min-height: 1em;
+        margin-top: 8px;
+      }
+
+      select,
+      input[type="number"],
+      input[type="text"] {
+        width: 100%;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: var(--radius-sm);
+        padding: 7px 10px;
+        font-size: 12px;
+        outline: none;
+      }
+      select:focus,
+      input:focus {
+        border-color: var(--blue);
+      }
+
+      .pill-row {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 6px;
+      }
+
+      .kpi-mini {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        margin-bottom: 10px;
+        font-size: 11px;
+      }
+      .kpi-mini .kv {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(46, 50, 72, 0.5);
+        font-variant-numeric: tabular-nums;
+      }
+      .kpi-mini .kv:last-child {
+        border-bottom: none;
+      }
+      .kpi-mini .lbl {
+        color: var(--text2);
+      }
+      .kpi-mini .val {
+        font-weight: 700;
+        color: var(--blue);
+        text-align: right;
+      }
+      .kpi-mini .val.g {
+        color: var(--green);
+      }
+
+      .btn-reset {
+        margin-top: 8px;
+        width: 100%;
+        padding: 7px 10px;
+        font-size: 11px;
+        cursor: pointer;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text2);
+      }
+      .btn-reset:hover {
+        border-color: var(--blue);
+        color: var(--blue);
+      }
+
+      .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .chart-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px;
+      }
+      .chart-title {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--text2);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 8px;
+      }
+      .chart-wrap {
+        height: 200px;
+        position: relative;
+      }
+      .chart-full {
+        grid-column: 1 / -1;
+      }
+
+      .table-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        margin-bottom: 14px;
+      }
+      .table-head {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .table-scroll {
+        overflow: auto;
+        max-height: 360px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        white-space: nowrap;
+      }
+      thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: var(--surface2);
+        color: var(--text3);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 7px 10px;
+        text-align: right;
+        border-bottom: 1px solid var(--border);
+      }
+      thead th:first-child {
+        text-align: left;
+      }
+      tbody tr {
+        border-bottom: 1px solid rgba(46, 50, 72, 0.4);
+      }
+      tbody tr:hover {
+        background: var(--surface2);
+      }
+      tbody td {
+        padding: 6px 10px;
+        font-size: 11px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      tbody td:first-child {
+        text-align: left;
+        color: var(--text2);
+      }
+      .c-int {
+        color: var(--danger) !important;
+      }
+      .c-cap {
+        color: var(--blue) !important;
+      }
+      .c-corr {
+        color: var(--purple) !important;
+      }
+
+      .disclaimer {
+        font-size: 10px;
+        color: var(--text3);
+        line-height: 1.5;
+        margin-bottom: 12px;
+      }
+
+      .kpi-hero {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .kpi-col {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+      }
+      .kpi-col.uvr {
+        border-top: 3px solid var(--blue);
+      }
+      .kpi-col.fija {
+        border-top: 3px solid var(--green);
+      }
+      .kpi-col-title {
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--border);
+      }
+      .kpi-col.uvr .kpi-col-title {
+        color: var(--blue);
+      }
+      .kpi-col.fija .kpi-col-title {
+        color: var(--green);
+      }
+      .kpi-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 10px;
+        padding: 6px 0;
+        border-bottom: 1px solid rgba(46, 50, 72, 0.45);
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+      .kpi-row:last-child {
+        border-bottom: none;
+      }
+      .kpi-row .kl {
+        color: var(--text2);
+        font-size: 11px;
+        flex-shrink: 0;
+      }
+      .kpi-row .kv {
+        font-weight: 700;
+        text-align: right;
+      }
+      .kpi-col.uvr .kv {
+        color: var(--text);
+      }
+      .kpi-col.fija .kv {
+        color: var(--text);
+      }
+      .kpi-foot {
+        font-size: 10px;
+        color: var(--text3);
+        margin-top: 10px;
+        line-height: 1.45;
+      }
+
+      details.desk {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        margin-bottom: 10px;
+        overflow: hidden;
+      }
+      details.desk > summary {
+        padding: 10px 14px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text2);
+        list-style: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        user-select: none;
+      }
+      details.desk > summary::-webkit-details-marker {
+        display: none;
+      }
+      details.desk > summary::after {
+        content: "▸";
+        color: var(--text3);
+        font-size: 10px;
+        transition: transform 0.15s;
+      }
+      details.desk[open] > summary::after {
+        transform: rotate(90deg);
+      }
+      details.desk > summary:hover {
+        color: var(--text);
+        background: var(--surface2);
+      }
+      details.desk .desk-body {
+        padding: 0 12px 12px;
+        border-top: 1px solid var(--border);
+      }
+
+      ::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+      }
+
+      @media (max-width: 960px) {
+        .layout {
+          flex-direction: column;
+        }
+        .sidebar {
+          width: 100%;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+        }
+        .charts-grid {
+          grid-template-columns: 1fr;
+        }
+        .kpi-hero {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div>
+        <div class="header-title">UVR vs tasa fija — misma deuda</div>
+        <div class="header-meta" id="headerMeta"></div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="sidebar">
+        <div class="section-title">Crédito (referencia desembolso)</div>
+        <div class="kpi-mini" id="kpiFijo"></div>
+
+        <div class="section-title">Proyección UVR (crecimiento UVR = IPC)</div>
+        <div class="ctrl-group">
+          <div class="ctrl-label">Inflación anual asumida</div>
+          <select id="selInflacion">
+            <option value="3.0">3,0 %</option>
+            <option value="4.0">4,0 %</option>
+            <option value="5.1" selected>5,1 %</option>
+            <option value="6.5">6,5 %</option>
+            <option value="8.0">8,0 %</option>
+          </select>
+          <div class="hint" id="hintInfl">
+            El UVR se indexa al IPC. Esta tasa es la que usamos para proyectar
+            el valor del UVR mes a mes.
+          </div>
+        </div>
+
+        <div class="section-title">Cuota — crédito UVR</div>
+        <div class="ctrl-group">
+          <div class="ctrl-label">
+            Cuota capital + interés (COP, mes 1, sin seguros)
+          </div>
+          <input type="number" id="nCuotaUVR" step="1000" min="0" />
+          <div class="hint">
+            Equivale a una cuota constante en UVR. Los
+            <strong>seguros</strong> se suman aparte al total mensual.
+          </div>
+        </div>
+
+        <div class="section-title">Comparativo — tasa fija en pesos</div>
+        <div class="ctrl-group">
+          <div class="ctrl-label">Tasa nominal anual (E.A.)</div>
+          <select id="selTasaFija">
+            <option value="11.5">11,5 %</option>
+            <option value="12.21">12,21 %</option>
+            <option value="12.91" selected>12,91 %</option>
+            <option value="13.5">13,5 %</option>
+            <option value="15.0">15,0 %</option>
+            <option value="custom">Personalizada…</option>
+          </select>
+        </div>
+        <div class="ctrl-group" id="grpFijaCustom" style="display: none">
+          <input
+            type="number"
+            id="nFijaCustom"
+            value="12.91"
+            step="0.01"
+            min="1"
+            max="40"
+          />
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label">
+            Cuota fija mensual (COP, capital + interés)
+          </div>
+          <input type="number" id="nCuotaFija" step="1000" min="0" />
+        </div>
+
+        <div class="section-title">
+          Seguros mensuales (modelo aparte capital / interés)
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label">Escenario UVR (COP / mes)</div>
+          <input type="number" id="nSegUVR" value="29831" step="100" min="0" />
+          <div class="hint">
+            Se suma cada mes al cap.+int.; no amortiza capital.
+          </div>
+        </div>
+        <div class="ctrl-group">
+          <div class="ctrl-label">Escenario tasa fija (COP / mes)</div>
+          <input type="number" id="nSegFija" value="29831" step="100" min="0" />
+          <div class="hint">
+            Misma lógica: rubro paralelo mensual solo para egreso total.
+          </div>
+        </div>
+
+        <button type="button" class="btn-reset" id="btnResetCuotas">
+          Restaurar cuotas al amortizado estándar
+        </button>
+        <div class="hint" id="errMsg"></div>
+      </div>
+
+      <div class="content">
+        <p class="disclaimer">
+          Proyección educativa: lo incierto es el IPC futuro (trayectoria del
+          UVR). La corrección monetaria en COP es distinta del interés pactado
+          sobre el saldo en UVR.
+        </p>
+
+        <div
+          class="section-title"
+          style="margin-bottom: 10px; letter-spacing: 0.06em"
+        >
+          Comparativo en números
+        </div>
+        <div class="kpi-hero" id="kpiHero"></div>
+
+        <div
+          class="section-title"
+          style="margin-bottom: 10px; letter-spacing: 0.06em"
+        >
+          Gráficas
+        </div>
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-title">
+              Cuota en pesos (diciembre de cada año)
+            </div>
+            <div class="chart-wrap"><canvas id="cCuota"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Saldo pendiente COP (fin de año)</div>
+            <div class="chart-wrap"><canvas id="cSaldo"></canvas></div>
+          </div>
+          <div class="chart-card chart-full">
+            <div class="chart-title">
+              Capital e intereses desembolsados por año (no acumulado)
+            </div>
+            <div class="chart-wrap" style="height: 220px">
+              <canvas id="cAcum"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <details class="desk">
+          <summary>Tablas opcionales — resumen anual</summary>
+          <div class="desk-body">
+            <div class="table-card" style="margin-top: 12px">
+              <div class="table-head">Cierre por año — UVR</div>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Año</th>
+                      <th>IPC proyecto (% anual)</th>
+                      <th>UVR dic (proy.)</th>
+                      <th>Cuota dic (aprox.)</th>
+                      <th class="c-cap">Capital año</th>
+                      <th class="c-int">Interés año</th>
+                      <th class="c-corr">Corrección año</th>
+                      <th>Saldo COP fin</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyAnualUVR"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="table-card">
+              <div class="table-head">Cierre por año — tasa fija</div>
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Año</th>
+                      <th>Cap.+int.</th>
+                      <th>c/ seguros</th>
+                      <th class="c-cap">Capital año</th>
+                      <th class="c-int">Interés año</th>
+                      <th>Saldo COP fin</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyAnualFija"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="desk">
+          <summary>Tablas opcionales — amortización mensual UVR</summary>
+          <div class="desk-body">
+            <div class="table-card" style="margin-top: 12px">
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Mes</th>
+                      <th>UVR período</th>
+                      <th class="c-int">Interés COP</th>
+                      <th class="c-corr">Corrección COP</th>
+                      <th class="c-cap">Capital COP</th>
+                      <th>Cuota cap.+int.</th>
+                      <th>Cuota + seguros</th>
+                      <th>Saldo COP</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyUVR"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="desk">
+          <summary>Tablas opcionales — amortización mensual tasa fija</summary>
+          <div class="desk-body">
+            <div class="table-card" style="margin-top: 12px">
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Mes</th>
+                      <th class="c-int">Interés COP</th>
+                      <th class="c-cap">Capital COP</th>
+                      <th>Cap.+int.</th>
+                      <th>c/ seguros</th>
+                      <th>Saldo COP</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tbodyFija"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <script>
+      const charts = {};
+
+      const CAPITAL_COP = 165470750.21;
+      const CAPITAL_UVR = 403454.0558;
+      const UVR_DESEMBOLSO = 410.1353;
+      const TASA_UVR_EA = 0.025;
+      const PLAZO_MESES = 360;
+
+      const $ = id => document.getElementById(id);
+
+      function fmt(n) { return Math.round(n).toLocaleString('es-CO'); }
+      function fmtM(n) { return n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(0) + 'K' : Math.round(n); }
+      function pct(x) { return x.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+      function kop(n) { return Number.isFinite(n) ? '$' + fmt(n) : '—'; }
+
+      function getSeguroUVR() {
+        const v = parseFloat($('nSegUVR').value);
+        return Number.isFinite(v) && v >= 0 ? v : 0;
+      }
+
+      function getSeguroFija() {
+        const v = parseFloat($('nSegFija').value);
+        return Number.isFinite(v) && v >= 0 ? v : 0;
+      }
+
+      function getTasaFijaPct() {
+        const v = $('selTasaFija').value;
+        return v === 'custom' ? (parseFloat($('nFijaCustom').value) || 12.91) : parseFloat(v);
+      }
+
+      function cuotaUVRAmonStandard() {
+        const tasaMV = Math.pow(1 + TASA_UVR_EA, 1 / 12) - 1;
+        return CAPITAL_UVR * tasaMV / (1 - Math.pow(1 + tasaMV, -PLAZO_MESES));
+      }
+
+      function cuotaFijaStandard(tasaPct) {
+        const tasaMV = Math.pow(1 + tasaPct / 100, 1 / 12) - 1;
+        return CAPITAL_COP * tasaMV / (1 - Math.pow(1 + tasaMV, -PLAZO_MESES));
+      }
+
+      let userEditedUVR = false;
+      let userEditedFija = false;
+
+      $('nCuotaUVR').addEventListener('input', () => { userEditedUVR = true; calcular(); });
+      $('nCuotaFija').addEventListener('input', () => { userEditedFija = true; calcular(); });
+      $('nSegUVR').addEventListener('input', calcular);
+      $('nSegFija').addEventListener('input', calcular);
+
+      $('btnResetCuotas').addEventListener('click', () => {
+        userEditedUVR = false;
+        userEditedFija = false;
+        $('nCuotaUVR').value = Math.round(cuotaUVRAmonStandard() * UVR_DESEMBOLSO);
+        $('nCuotaFija').value = Math.round(cuotaFijaStandard(getTasaFijaPct()));
+        $('errMsg').textContent = '';
+        $('errMsg').style.color = '';
+        calcular();
+      });
+
+      $('selInflacion').addEventListener('change', calcular);
+      $('selTasaFija').addEventListener('change', function () {
+        $('grpFijaCustom').style.display = this.value === 'custom' ? '' : 'none';
+        if (!userEditedFija) $('nCuotaFija').value = Math.round(cuotaFijaStandard(getTasaFijaPct()));
+        calcular();
+      });
+      $('nFijaCustom').addEventListener('input', () => {
+        if (!userEditedFija) $('nCuotaFija').value = Math.round(cuotaFijaStandard(getTasaFijaPct()));
+        calcular();
+      });
+
+      function amortizarUVR(inflAnual, cuotaUVR, segurosMes) {
+        const seg = Number.isFinite(segurosMes) && segurosMes >= 0 ? segurosMes : 0;
+        const tasaMV = Math.pow(1 + TASA_UVR_EA, 1 / 12) - 1;
+        const inflMV = Math.pow(1 + inflAnual, 1 / 12) - 1;
+        let saldoUVR = CAPITAL_UVR;
+        const rows = [];
+        let totInt = 0, totCorr = 0, totCap = 0, totSeg = 0, totTotal = 0;
+        let error = null;
+
+        for (let m = 1; m <= PLAZO_MESES * 4; m++) {
+          if (saldoUVR < 1e-6) break;
+          const uvrM = UVR_DESEMBOLSO * Math.pow(1 + inflMV, m);
+          const uvrPrev = UVR_DESEMBOLSO * Math.pow(1 + inflMV, m - 1);
+
+          const intUVR = saldoUVR * tasaMV;
+          let capUVR = cuotaUVR - intUVR;
+          if (capUVR < 0) {
+            error = 'La cuota UVR (en pesos mes 1) no cubre el interés inicial.';
+            break;
+          }
+          capUVR = Math.min(capUVR, saldoUVR);
+
+          const corrMonetaria = saldoUVR * (uvrM - uvrPrev);
+          const cuotaCOP = cuotaUVR * uvrM;
+          const intCOP = intUVR * uvrM;
+          const capCOP = capUVR * uvrM;
+
+          saldoUVR = Math.max(0, saldoUVR - capUVR);
+
+          const cuotaSeg = seg;
+          const cuotaTotal = cuotaCOP + cuotaSeg;
+
+          totInt += intCOP;
+          totCorr += corrMonetaria;
+          totCap += capCOP;
+          totSeg += seg;
+          totTotal += cuotaTotal;
+
+          rows.push({ m, uvrM, cuotaUVR, cuotaCOP, intCOP, corrMonetaria, capCOP, seguros: seg, cuotaTotal, saldoUVR, saldoCOP: saldoUVR * uvrM });
+          if (saldoUVR < 1e-6) break;
+        }
+
+        const out = {
+          rows,
+          error,
+          totInt, totCorr, totCap, totSeg,
+          totTotal: rows.reduce((s, r) => s + r.cuotaTotal, 0),
+          meses: rows.length,
+          cuotaUVR_const: cuotaUVR,
+        };
+        return out;
+      }
+
+      function amortizarFija(tasaEA, cuotaCOPmensual) {
+        const tasaMV = Math.pow(1 + tasaEA / 100, 1 / 12) - 1;
+        let saldo = CAPITAL_COP;
+        const rows = [];
+        let totInt = 0, totCap = 0;
+        let error = null;
+
+        const cuota = cuotaCOPmensual;
+
+        const MAX_MESES_FIJA = PLAZO_MESES * 5;
+
+        for (let m = 1; m <= MAX_MESES_FIJA; m++) {
+          if (saldo < 1) break;
+          const intCOP = saldo * tasaMV;
+          if (cuota < intCOP - 1e-6) {
+            error =
+              `Tu cuota cap.+int. (${fmt(cuota)} COP) no cubre los intereses de este mes (${fmt(intCOP)} COP): estarías en amortización negativa.` +
+              (m === 1
+                ? ` Con ~${fmt(CAPITAL_COP)} COP deuda, cuando la cuota solo “roza” el interés inicial (unos ${fmt(Math.round(CAPITAL_COP * ((Math.pow(1 + tasaEA / 100, 1 / 12) - 1))))} COP si la E.A. es cercana), la parte que rebaja capital es mínima y el plazo explota —70 u 85 años no es bug, es esa matemática.`
+                : '');
+            break;
+          }
+          const capCOP = Math.min(Math.max(cuota - intCOP, 0), saldo);
+          saldo = Math.max(0, saldo - capCOP);
+          totInt += intCOP;
+          totCap += capCOP;
+          rows.push({ m, cuota, intCOP, capCOP, saldo });
+          if (saldo < 1) break;
+        }
+
+        let warn = null;
+        if (!error && rows.length && saldo >= 1 && rows.length >= MAX_MESES_FIJA)
+          warn = `Se alcanzó el límite del simulador (${Math.round(MAX_MESES_FIJA / 12)} años): todavía quedarían ~$${fmt(saldo)} COP de saldo. Subí la cuota o revisá la tasa.`;
+
+        const totPagado = rows.reduce((s, r) => s + r.cuota, 0);
+        const intMes1SaldoIni = CAPITAL_COP * tasaMV;
+        return {
+          rows, error, warn,
+          saldoResidual: saldo,
+          intMes1SaldoIni,
+          amortMes1SaldoIni: cuota - intMes1SaldoIni,
+          cuota, totInt, totCap, totTotal: totPagado,
+          meses: rows.length,
+        };
+      }
+
+      function destroyChart(id) {
+        if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+      }
+
+      const gridOpts = () => ({ color: 'rgba(46,50,72,0.5)', drawBorder: false });
+      const tickOpts = () => ({ color: '#555b75', font: { size: 10 } });
+
+      function agregarPorAnio(rowsUV, rowsFj) {
+        const anios = Math.max(
+          rowsUV.length ? Math.ceil(rowsUV.length / 12) : 0,
+          rowsFj.length ? Math.ceil(rowsFj.length / 12) : 0,
+          1,
+        );
+        const outU = [];
+        const outF = [];
+        for (let y = 1; y <= anios; y++) {
+          const i0 = (y - 1) * 12;
+          const sliceU = rowsUV.slice(i0, y * 12);
+          const sliceF = rowsFj.slice(i0, y * 12);
+          if (!sliceU.length && !sliceF.length) break;
+
+          if (sliceU.length) {
+            const last = sliceU[sliceU.length - 1];
+            outU.push({
+              anio: y,
+              uvrDic: last.uvrM,
+                  cuotaDic: last.cuotaTotal,
+              cuotaSinSegDic: last.cuotaCOP,
+              cap: sliceU.reduce((s, r) => s + r.capCOP, 0),
+              int: sliceU.reduce((s, r) => s + r.intCOP, 0),
+              corr: sliceU.reduce((s, r) => s + r.corrMonetaria, 0),
+              saldoCOP: last.saldoCOP,
+            });
+          }
+          if (sliceF.length) {
+            const last = sliceF[sliceF.length - 1];
+            outF.push({
+              anio: y,
+              cuotaMes: sliceF[0]?.cuota || 0,
+              cap: sliceF.reduce((s, r) => s + r.capCOP, 0),
+              int: sliceF.reduce((s, r) => s + r.intCOP, 0),
+              saldo: last.saldo,
+            });
+          }
+        }
+        return { outU, outF };
+      }
+
+      function calcular() {
+        $('errMsg').textContent = '';
+        $('errMsg').style.color = '';
+        const inflAnual = parseFloat($('selInflacion').value) / 100;
+        const inflPct = parseFloat($('selInflacion').value);
+
+        let copMes1 = parseFloat($('nCuotaUVR').value);
+        if (!userEditedUVR || !Number.isFinite(copMes1) || copMes1 <= 0) {
+          copMes1 = cuotaUVRAmonStandard() * UVR_DESEMBOLSO;
+          $('nCuotaUVR').value = Math.round(copMes1);
+          userEditedUVR = false;
+        }
+        const cuotaUVR = copMes1 / UVR_DESEMBOLSO;
+
+        const tasaFijaEA = getTasaFijaPct();
+        let cuotaFijaCOP = parseFloat($('nCuotaFija').value);
+        if (!userEditedFija || !Number.isFinite(cuotaFijaCOP) || cuotaFijaCOP <= 0) {
+          cuotaFijaCOP = cuotaFijaStandard(tasaFijaEA);
+          $('nCuotaFija').value = Math.round(cuotaFijaCOP);
+          userEditedFija = false;
+        }
+
+        const segUVR = getSeguroUVR();
+        const segFija = getSeguroFija();
+
+        const uvrRes = amortizarUVR(inflAnual, cuotaUVR, segUVR);
+        const fijaRes = amortizarFija(tasaFijaEA, cuotaFijaCOP);
+
+        const errBits = [];
+        const infoBits = [];
+        if (uvrRes.error) errBits.push(uvrRes.error);
+        if (fijaRes.error) errBits.push(fijaRes.error);
+        if (!fijaRes.error && fijaRes.warn) infoBits.push(fijaRes.warn);
+
+        if (!fijaRes.error && fijaRes.rows?.length) {
+          const m = fijaRes.meses;
+          const i1 = fijaRes.intMes1SaldoIni;
+          const a1 = fijaRes.amortMes1SaldoIni;
+          const ratio = cuotaFijaCOP > 1e-9 ? i1 / cuotaFijaCOP : 0;
+          if (m >= 900)
+            infoBits.push(`Crédito fija: amortización muy lenta (${(m / 12).toFixed(1)} años): en el primer mes los intereses eran ~${pct(ratio * 100)} % de tu cuota; solo ~$${fmt(Math.max(a1, 0))} amortizaban capital.`);
+          else if (m >= 540 && ratio > 0.88)
+            infoBits.push(`Crédito fija: cuota apenas por encima de los intereses (mes 1: intereses $${fmt(i1)}, a capital $${fmt(Math.max(a1, 0))}). Por eso el plazo se alarga tanto.`);
+        }
+
+        const msgPartsErr = [...errBits];
+        const msgPartsInf = [...infoBits];
+        const allMsgs = [...msgPartsErr, ...msgPartsInf];
+        $('errMsg').textContent = allMsgs.join('\n');
+        $('errMsg').style.color = msgPartsErr.length ? 'var(--danger)' : (msgPartsInf.length ? 'var(--warn)' : '');
+
+        const rowsU = uvrRes.error ? [] : uvrRes.rows;
+        const rowsF = fijaRes.error ? [] : fijaRes.rows;
+
+        $('headerMeta').innerHTML = `
+          <span><strong>Tasa crédito UVR:</strong> ${pct(TASA_UVR_EA * 100)} % E.A.</span>
+          <span><strong>Inflación proyectada:</strong> ${pct(inflPct)} % año</span>
+          <span><strong>Tasa fija comparativo:</strong> ${pct(tasaFijaEA)} % E.A.</span>
+          <span><strong>Seguros modelo:</strong> UVR $${fmt(segUVR)}/mes · Fija $${fmt(segFija)}/mes</span>
+        `;
+
+        $('hintInfl').textContent = `Inflación anual asumida: ${pct(inflPct)} %. UVR proyecto año 30: $${fmt(UVR_DESEMBOLSO * Math.pow(1 + inflAnual, 30))} (solo proyección contable).`;
+
+        let kpiUv = '';
+        let kpiFj = '';
+        if (rowsU.length) {
+          const r180 = rowsU[179];
+          const rLast = rowsU[rowsU.length - 1];
+          kpiUv = `
+            <div class="kpi-row"><span class="kl">Cuota mes 1 (seguros incl.)</span><span class="kv">${kop(rowsU[0].cuotaTotal)}</span></div>
+            <div class="kpi-row"><span class="kl">Cuota dic. año 15 (aprox.)</span><span class="kv">${r180 ? kop(r180.cuotaTotal) : '— (< año 15 al saldar)'}</span></div>
+            <div class="kpi-row"><span class="kl">Última cuota (fin crédito)</span><span class="kv">${kop(rLast.cuotaTotal)}</span></div>
+            <div class="kpi-row"><span class="kl">Tiempo hasta saldar</span><span class="kv">${(uvrRes.meses / 12).toFixed(1)} años (${uvrRes.meses} meses)</span></div>
+            <div class="kpi-row"><span class="kl">Intereses COP total</span><span class="kv">$${fmtM(uvrRes.totInt)}</span></div>
+            <div class="kpi-row"><span class="kl">Corrección monetaria total</span><span class="kv">$${fmtM(uvrRes.totCorr)}</span></div>
+            <div class="kpi-row"><span class="kl">Total seguros (modelo)</span><span class="kv">$${fmtM(uvrRes.totSeg)}</span></div>
+            <div class="kpi-row"><span class="kl">Total salida c/ seguros</span><span class="kv">$${fmtM(uvrRes.totTotal)}</span></div>`;
+        } else {
+          kpiUv = '<div class="kpi-row"><span class="kl">Sin simulación</span><span class="kv">Revisá la cuota UVR.</span></div>';
+        }
+
+        if (rowsF.length) {
+          const totFijaConSeg = fijaRes.totTotal + segFija * fijaRes.meses;
+          const totSegFijaMas = segFija * fijaRes.meses;
+          const i1 = fijaRes.intMes1SaldoIni;
+          const a1 = Math.max(fijaRes.amortMes1SaldoIni, 0);
+          kpiFj = `
+            <div class="kpi-row"><span class="kl">Mes 1: intereses</span><span class="kv">$${fmt(i1)}</span></div>
+            <div class="kpi-row"><span class="kl">Mes 1: a capital</span><span class="kv">$${fmt(a1)}</span></div>
+            <div class="kpi-row"><span class="kl">Cuota mensual cap.+int.</span><span class="kv">${kop(fijaRes.cuota)}</span></div>
+            <div class="kpi-row"><span class="kl">Cuota mensual c/ seguros</span><span class="kv">${kop(fijaRes.cuota + segFija)}</span></div>
+            <div class="kpi-row"><span class="kl">Tiempo hasta saldar</span><span class="kv">${(fijaRes.meses / 12).toFixed(1)} años (${fijaRes.meses} meses)</span></div>
+            <div class="kpi-row"><span class="kl">Intereses COP total</span><span class="kv">$${fmtM(fijaRes.totInt)}</span></div>
+            <div class="kpi-row"><span class="kl">Corrección monetaria</span><span class="kv">No aplica</span></div>
+            <div class="kpi-row"><span class="kl">Total cap.+int.</span><span class="kv">$${fmtM(fijaRes.totTotal)}</span></div>
+            <div class="kpi-row"><span class="kl">Total seguros (modelo)</span><span class="kv">$${fmtM(totSegFijaMas)}</span></div>
+            <div class="kpi-row"><span class="kl">Total salida c/ seguros</span><span class="kv">$${fmtM(totFijaConSeg)}</span></div>`;
+        } else if (fijaRes.error) {
+          kpiFj = `
+            <div class="kpi-row"><span class="kl">Mes 1: intereses (referencia)</span><span class="kv">$${fmt(fijaRes.intMes1SaldoIni)}</span></div>
+            <div class="kpi-row"><span class="kl">Tu cuota cap.+int.</span><span class="kv">${kop(fijaRes.cuota)}</span></div>
+            <div class="kpi-row"><span class="kl">Estado</span><span class="kv" style="color:var(--danger)">Ver mensaje abajo</span></div>`;
+        } else {
+          kpiFj = '<div class="kpi-row"><span class="kl">Sin simulación</span><span class="kv">Revisá cuota o tasa fija.</span></div>';
+        }
+
+        $('kpiHero').innerHTML = `
+          <div class="kpi-col uvr">
+            <div class="kpi-col-title">Crédito UVR (${pct(TASA_UVR_EA * 100)} % E.A.)</div>
+            ${kpiUv}
+            <p class="kpi-foot">Proyección con IPC constante ${pct(inflPct)} % anual. Seguro modelo UVR $${fmt(segUVR)}/mes.</p>
+          </div>
+          <div class="kpi-col fija">
+            <div class="kpi-col-title">Crédito tasa fija (${pct(tasaFijaEA)} % E.A.)</div>
+            ${kpiFj}
+            <p class="kpi-foot">Seguros separados del capital/interés obligatorio; modelo $${fmt(segFija)}/mes. Los cruces contra UVR sirven usando la misma lógica de egreso mensual.</p>
+          </div>`;
+
+        $('kpiFijo').innerHTML = `
+          <div class="kv"><span class="lbl">Capital COP</span><span class="val">$${fmt(CAPITAL_COP)}</span></div>
+          <div class="kv"><span class="lbl">Capital UVR</span><span class="val">${CAPITAL_UVR.toLocaleString('es-CO', { maximumFractionDigits: 4 })}</span></div>
+          <div class="kv"><span class="lbl">UVR desembolso</span><span class="val g">$${UVR_DESEMBOLSO}</span></div>
+          <div class="kv"><span class="lbl">Plazo contractual máx.</span><span class="val">${PLAZO_MESES / 12} años</span></div>
+          <div class="kv"><span class="lbl">Cuota estándar COP (mes 1, sin seg.)</span><span class="val">$${fmt(cuotaUVRAmonStandard() * UVR_DESEMBOLSO)}</span></div>
+          <div class="kv"><span class="lbl">Duración simulación UVR</span><span class="val">${rowsU.length ? (uvrRes.meses / 12).toFixed(2) : '—'} años</span></div>
+          <div class="kv"><span class="lbl">Duración simulación fija</span><span class="val g">${rowsF.length ? (fijaRes.meses / 12).toFixed(2) : '—'} años</span></div>
+        `;
+
+        const { outU, outF } = agregarPorAnio(rowsU, rowsF);
+
+        $('tbodyAnualUVR').innerHTML = outU.map(r => `
+          <tr>
+            <td>${r.anio}</td>
+            <td>${pct(inflPct)} %</td>
+            <td>$${r.uvrDic.toLocaleString('es-CO', { minimumFractionDigits: 2 })}</td>
+            <td>$${fmt(r.cuotaDic)}</td>
+            <td class="c-cap">$${fmt(r.cap)}</td>
+            <td class="c-int">$${fmt(r.int)}</td>
+            <td class="c-corr">$${fmt(r.corr)}</td>
+            <td>$${fmt(r.saldoCOP)}</td>
+          </tr>`).join('');
+
+        $('tbodyAnualFija').innerHTML = outF.map(r => `
+          <tr>
+            <td>${r.anio}</td>
+            <td>$${fmt(r.cuotaMes)}</td>
+            <td>$${fmt(r.cuotaMes + segFija)}</td>
+            <td class="c-cap">$${fmt(r.cap)}</td>
+            <td class="c-int">$${fmt(r.int)}</td>
+            <td>$${fmt(r.saldo)}</td>
+          </tr>`).join('');
+
+        const nAnios = Math.max(outU.length, outF.length, 1);
+        const lblAnios = Array.from({ length: nAnios }, (_, i) => 'Año ' + (i + 1));
+
+        const cuotasUVRgraf = outU.map(r => Math.round(r.cuotaDic));
+        const cuotasFijaG = outF.map(r => Math.round(r.cuotaMes + segFija));
+        while (cuotasUVRgraf.length < nAnios) cuotasUVRgraf.push(null);
+        while (cuotasFijaG.length < nAnios) cuotasFijaG.push(null);
+
+        const saldosU = outU.map(r => Math.round(r.saldoCOP));
+        const saldosF = outF.map(r => Math.round(r.saldo));
+        const lastSU = saldosU.length ? saldosU[saldosU.length - 1] : null;
+        const lastSF = saldosF.length ? saldosF[saldosF.length - 1] : null;
+        while (saldosU.length < nAnios) saldosU.push(lastSU ?? null);
+        while (saldosF.length < nAnios) saldosF.push(lastSF ?? null);
+
+        destroyChart('cCuota');
+        charts['cCuota'] = new Chart($('cCuota'), {
+          type: 'line',
+          data: {
+            labels: lblAnios,
+            datasets: [
+              { label: 'UVR (dic. c/ seg.)', data: cuotasUVRgraf.slice(0, lblAnios.length), borderColor: '#4f8ef7', backgroundColor: 'rgba(79,142,247,0.06)', fill: true, tension: 0.25, spanGaps: true, borderWidth: 2 },
+              { label: 'Fija (dic. c/ seg. modelo)', data: cuotasFijaG.slice(0, lblAnios.length), borderColor: '#34d39a', backgroundColor: 'rgba(52,211,154,0.04)', fill: false, tension: 0, borderDash: [5, 3], spanGaps: true, borderWidth: 2 },
+            ],
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#8b90a8', font: { size: 10 } } } },
+            scales: {
+              x: { ticks: { ...tickOpts(), autoSkip: true, maxTicksLimit: 12 }, grid: gridOpts() },
+              y: { ticks: { ...tickOpts(), callback: v => '$' + fmtM(v) }, grid: gridOpts() },
+            },
+          },
+        });
+
+        destroyChart('cSaldo');
+        charts['cSaldo'] = new Chart($('cSaldo'), {
+          type: 'line',
+          data: {
+            labels: lblAnios,
+            datasets: [
+              { label: 'Saldo UVR COP', data: saldosU, borderColor: '#4f8ef7', backgroundColor: 'rgba(79,142,247,0.08)', fill: true, tension: 0.2, borderWidth: 2 },
+              { label: 'Saldo fija COP', data: saldosF, borderColor: '#34d39a', backgroundColor: 'rgba(52,211,154,0.06)', fill: true, tension: 0.2, borderWidth: 2 },
+            ],
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#8b90a8', font: { size: 10 } } } },
+            scales: {
+              x: { ticks: { ...tickOpts(), autoSkip: true }, grid: gridOpts() },
+              y: { ticks: { ...tickOpts(), callback: v => '$' + fmtM(v) }, grid: gridOpts() },
+            },
+          },
+        });
+
+        const yrCap = (arr, idx) => (arr[idx] ? Math.round(arr[idx].cap) : null);
+        const yrInt = (arr, idx) => (arr[idx] ? Math.round(arr[idx].int) : null);
+
+        destroyChart('cAcum');
+        charts['cAcum'] = new Chart($('cAcum'), {
+          type: 'bar',
+          data: {
+            labels: lblAnios,
+            datasets: [
+              { label: 'Capital UVR (durante el año)', data: lblAnios.map((_, i) => yrCap(outU, i)), backgroundColor: 'rgba(79,142,247,0.82)' },
+              { label: 'Interés UVR (durante el año)', data: lblAnios.map((_, i) => yrInt(outU, i)), backgroundColor: 'rgba(240,96,96,0.76)' },
+              { label: 'Capital fijo (durante el año)', data: lblAnios.map((_, i) => yrCap(outF, i)), backgroundColor: 'rgba(52,211,154,0.82)' },
+              { label: 'Interés fijo (durante el año)', data: lblAnios.map((_, i) => yrInt(outF, i)), backgroundColor: 'rgba(245,166,35,0.78)' },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { labels: { color: '#8b90a8', font: { size: 10 } } },
+              tooltip: {
+                callbacks: {
+                  label(ctx) {
+                    const v = ctx.raw;
+                    if (v == null) return `${ctx.dataset.label}: —`;
+                    return `${ctx.dataset.label}: $${fmt(v)}`;
+                  },
+                },
+              },
+            },
+            scales: {
+              x: {
+                ticks: { ...tickOpts(), autoSkip: true, maxTicksLimit: 15 },
+                grid: gridOpts(),
+              },
+              y: {
+                ticks: { ...tickOpts(), callback: v => '$' + fmtM(v) },
+                grid: gridOpts(),
+              },
+            },
+          },
+        });
+
+        renderTablaUVR(rowsU);
+        renderTablaFija(rowsF, segFija);
+      }
+
+      function pickRowsForDetail(rows) {
+        const show = new Set();
+        for (let i = 0; i < Math.min(60, rows.length); i++) show.add(i);
+        [119, 179, 239, 299, rows.length - 1].forEach(i => {
+          if (i >= 0 && i < rows.length) show.add(i);
+        });
+        const arr = [...show].sort((a, b) => a - b);
+        let html = '';
+        let prev = -1;
+        arr.forEach(i => {
+          if (prev >= 0 && i > prev + 1)
+            html += `<tr style="pointer-events:none"><td colspan="8" style="text-align:center;color:var(--text3);font-size:10px;background:var(--bg)">· · · ${rows[prev].m + 1} … ${rows[i].m - 1} · · ·</td></tr>`;
+          const r = rows[i];
+          html += `<tr>
+            <td>${r.m}</td>
+            <td>$${r.uvrM.toFixed(2)}</td>
+            <td class="c-int">$${fmt(r.intCOP)}</td>
+            <td class="c-corr">$${fmt(r.corrMonetaria)}</td>
+            <td class="c-cap">$${fmt(r.capCOP)}</td>
+            <td>$${fmt(r.cuotaCOP)}</td>
+            <td>$${fmt(r.cuotaTotal)}</td>
+            <td>$${fmt(r.saldoCOP)}</td>
+          </tr>`;
+          prev = i;
+        });
+        html += `<tr><td colspan="8" style="text-align:center;color:var(--text3);font-size:10px">Vista compacta (${rows.length} meses).</td></tr>`;
+        $('tbodyUVR').innerHTML = html || '<tr><td colspan="8">Sin datos</td></tr>';
+      }
+
+      function renderTablaFijaDetail(rows, segMensual) {
+        const s = Number.isFinite(segMensual) && segMensual >= 0 ? segMensual : 0;
+        const show = new Set();
+        for (let i = 0; i < Math.min(60, rows.length); i++) show.add(i);
+        [119, 179, 239, 299, rows.length - 1].forEach(i => {
+          if (i >= 0 && i < rows.length) show.add(i);
+        });
+        const arr = [...show].sort((a, b) => a - b);
+        let html = '';
+        let prev = -1;
+        arr.forEach(i => {
+          if (prev >= 0 && i > prev + 1)
+            html += `<tr style="pointer-events:none"><td colspan="6" style="text-align:center;color:var(--text3);font-size:10px;background:var(--bg)">· · · ${rows[prev].m + 1} … ${rows[i].m - 1} · · ·</td></tr>`;
+          const r = rows[i];
+          html += `<tr>
+            <td>${r.m}</td>
+            <td class="c-int">$${fmt(r.intCOP)}</td>
+            <td class="c-cap">$${fmt(r.capCOP)}</td>
+            <td>$${fmt(r.cuota)}</td>
+            <td>$${fmt(r.cuota + s)}</td>
+            <td>$${fmt(r.saldo)}</td>
+          </tr>`;
+          prev = i;
+        });
+        if (rows.length) html += `<tr><td colspan="6" style="text-align:center;color:var(--text3);font-size:10px">Total ${rows.length} meses hasta saldar.</td></tr>`;
+        $('tbodyFija').innerHTML = html || '<tr><td colspan="6">Sin datos</td></tr>';
+      }
+
+      function renderTablaUVR(rows) {
+        if (!rows.length) { $('tbodyUVR').innerHTML = '<tr><td colspan="8">Sin datos</td></tr>'; return; }
+        pickRowsForDetail(rows);
+      }
+
+      function renderTablaFija(rows, segMensual) {
+        if (!rows.length) { $('tbodyFija').innerHTML = '<tr><td colspan="6">Sin datos</td></tr>'; return; }
+        renderTablaFijaDetail(rows, segMensual);
+      }
+
+      if (!$('nCuotaUVR').value) $('nCuotaUVR').value = Math.round(cuotaUVRAmonStandard() * UVR_DESEMBOLSO);
+      if (!$('nCuotaFija').value) $('nCuotaFija').value = Math.round(cuotaFijaStandard(getTasaFijaPct()));
+      calcular();
+    </script>
+  </body>
+</html>

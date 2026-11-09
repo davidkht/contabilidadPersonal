@@ -8,8 +8,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('databases/deudas.db', 'databases'),
-        ('docs/icono.ico', 'docs'),
-        ('docs/miimagen.ico', 'docs')
+        ('docs/icono.svg', 'docs')
     ],
     hiddenimports=[],
     hookspath=[],
@@ -34,7 +33,7 @@ exe = EXE(
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,  # Cambia a True si deseas una consola
-    icon='docs/icono.ico'  # Añade tu icono aquí
+    icon='docs/icono.svg'  # Añade tu icono aquí
 )
 coll = COLLECT(
     exe,

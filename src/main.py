@@ -3,11 +3,10 @@ from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import matplotlib.ticker as mticker
 import os
 import sys
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+
 
 
 def get_resource_path():
@@ -29,12 +28,13 @@ database = os.path.join(script_directory,'..','databases','deudas.db')
 
 with sqlite3.connect(database) as conn:
     c = conn.cursor()
-    # Crear tabla
+    # Crear tabla - Create the main Deudas table with person information
     c.execute('''
     CREATE TABLE IF NOT EXISTS Deudas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT NOT NULL COLLATE NOCASE,
         apellido TEXT NOT NULL COLLATE NOCASE,
+        documento TEXT,
         telefono TEXT,
         email TEXT,
         monto REAL NOT NULL,
@@ -46,22 +46,38 @@ with sqlite3.connect(database) as conn:
     ''')
     conn.commit()
 
-# Funciones para manejar las deudas
-def registrar_persona(nombre, apellido, telefono, email, monto, interes=0, descripcion=''):
+# Funciones para manejar las deudas - Functions to handle debt operations
+def registrar_persona(nombre, apellido, telefono, email, monto, interes=0, descripcion='', documento=''):
+    """
+    Registers a new person in the database with their debt information.
+    
+    Args:
+        nombre (str): First name of the person
+        apellido (str): Last name of the person
+        telefono (str): Phone number
+        email (str): Email address
+        monto (float): Initial debt amount
+        interes (float): Interest rate (default 0)
+        descripcion (str): Description of the debt
+        documento (str): ID document number (DNI, passport, etc.)
+    
+    Raises:
+        PermissionError: If a person with the same nombre and apellido already exists
+    """
     fecha = datetime.now().strftime('%Y-%m-%d')
     try:
         with sqlite3.connect(database) as conn:
             c = conn.cursor()
             c.execute('''
-            INSERT INTO Deudas (nombre, apellido, telefono, email, monto, interes, fecha, descripcion)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (nombre, apellido, telefono, email, monto, interes, fecha, descripcion))
+            INSERT INTO Deudas (nombre, apellido, documento, telefono, email, monto, interes, fecha, descripcion)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (nombre, apellido, documento, telefono, email, monto, interes, fecha, descripcion))
             conn.commit()
 
-        # Crear tabla individual para la persona
+        # Crear tabla individual para la persona - Create individual table for the person
         crear_tabla_persona(nombre, apellido)
         
-        # Insertar la deuda en la tabla individual
+        # Insertar la deuda en la tabla individual - Insert the debt in the individual table
         table_name = f"{nombre}_{apellido}".replace(' ', '_')
         with sqlite3.connect(database) as conn:
             c = conn.cursor()
@@ -109,19 +125,37 @@ def actualizar_deuda(nombre, apellido, deuda_total, transaccion, descripcion='')
         ''', (deuda_total, transaccion, fecha, descripcion))
         conn.commit()
 
-def editar_registro(nombre, apellido,telefono,email):
+def editar_registro(nombre, apellido, telefono, email, documento=''):
+    """
+    Updates an existing person's information in the database (UPSERT operation).
+    
+    Args:
+        nombre (str): First name of the person
+        apellido (str): Last name of the person
+        telefono (str): Phone number
+        email (str): Email address
+        documento (str): ID document number (DNI, passport, etc.)
+    
+    This function updates the telefono, email, and documento fields for an existing person.
+    """
     with sqlite3.connect(database) as conn:
         c = conn.cursor()
         c.execute("""
-                  UPDATE deudas 
-                  SET telefono=?, email=? 
-                  WHERE nombre=? AND apellido=?""", (telefono,email,nombre, apellido))
+                  UPDATE Deudas 
+                  SET telefono=?, email=?, documento=? 
+                  WHERE nombre=? AND apellido=?""", (telefono, email, documento, nombre, apellido))
         conn.commit()
 
 def consultar_deudas():
+    """
+    Retrieves all debts from the database.
+    
+    Returns:
+        pandas.DataFrame: A DataFrame containing all person records with their debt information
+    """
     with sqlite3.connect(database) as conn:
         query = '''
-        SELECT id, nombre, apellido, telefono, email, monto, interes, fecha 
+        SELECT id, nombre, apellido, documento, telefono, email, monto, interes, fecha 
         FROM Deudas
         '''
         df = pd.read_sql(query, conn)
@@ -161,28 +195,78 @@ def exportar_datos_a_csv(tabla,nombre=None,apellido=None,filename='deudas_export
     return filename
 
 def generar_grafica(nombre, apellido, output_path='historial_movimientos.png'):
-    df_movimientos=consultar_tabla_persona(nombre,apellido)
+    """
+    Generates a line plot showing the total debt over the number of entries for a specific person.
 
-    # Crear un gráfico de barras con matplotlib
-    fig, ax = plt.subplots(figsize=(6,4))
+    This function fetches the transaction history for a person, then plots their
+    total debt against the transaction number (ID). The resulting plot is saved
+    to an image file.
+
+    Args:
+        nombre (str): The first name of the person.
+        apellido (str): The last name of the person.
+        output_path (str, optional): The path to save the output image file. 
+                                     Defaults to 'historial_movimientos.png'.
+    """
+    df_movimientos = consultar_tabla_persona(nombre, apellido)
+
+    # Sort the DataFrame by 'id' to ensure the line plot connects points in order of entry.
+    df_movimientos = df_movimientos.sort_values(by='id')
+
+    # Create a figure and an axes for the plot with a specific size.
+    fig, ax = plt.subplots(figsize=(6, 4))
     
+    # Plot the total debt ('deuda_total') against the transaction ID ('id').
+    # A marker is used for each data point and a solid line connects them.
+    ax.plot(
+        df_movimientos['id'], 
+        df_movimientos['deuda_total'], 
+        marker='s', 
+        linestyle='-', 
+        color='red',
+        linewidth=1,
+        markerfacecolor='red',
+        markersize=1.5,
+        markeredgecolor='black',
+        markeredgewidth=0.2
+    )
+    
+    #Set the background color to grey
+    ax.set_facecolor('lightgrey')
+  
+    # Set the labels for the x and y axes.
+    ax.set_xlabel('Transaction Number')
+    ax.set_ylabel('Total Debt')
+    # Set the title of the plot.
+    ax.set_title('Debt History')
+  
+    # Add horizontal and vertical lines at the origin (0,0) to serve as a reference grid.
+    ax.axhline(0, color='black', linestyle='-', linewidth=0.5)
+    ax.axvline(0, color='black', linestyle='-', linewidth=0.5)
 
-    # Crear las barras para cada movimiento individualmente
-    ax.bar(df_movimientos['id'], df_movimientos['transaccion'], color='blue')
-    # Etiquetas y título del gráfico
-    ax.set_xlabel('N°')
-    ax.set_ylabel('Monto')
-    ax.set_title('Historial de Movimientos')
+    # Format the y-axis labels to appear as currency, preventing scientific notation.
+    # This uses a FuncFormatter to apply a lambda function that formats the tick values.
+    # The format string '${x:,.0f}' means:
+    # - Start with a '$' sign.
+    # - Use a comma as a thousands separator.
+    # - Display the number with 0 decimal places (as an integer).
+    formatter = mticker.FuncFormatter(lambda x, p: f'${x:,.0f}')
+    ax.yaxis.set_major_formatter(formatter)
 
-    # Añadir una cuadrícula al gráfico
-    ax.grid(True, which='both', linestyle='--', linewidth=0.5)
-
-    # Configurar los ticks del eje y para mostrar más valores
+    # Configure the y-axis to have a reasonable number of ticks.
+    # 'prune='lower'' can remove the lowest tick if it's too close to the edge.
     ax.yaxis.set_major_locator(plt.MaxNLocator(nbins=10, prune='lower'))
     ax.yaxis.set_minor_locator(plt.MaxNLocator(nbins=20))
 
-    # Guardar la gráfica como una imagen
+    # Ensure the x-axis ticks are integers.
+    ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
+
+    # Adjust layout to make sure everything fits, preventing labels from being cut off.
+    plt.tight_layout()
+
+    # Save the generated plot to the specified image file.
     plt.savefig(output_path)
+    # Close the figure to free up memory.
     plt.close(fig)
 
 def verificar_y_calcular_intereses():

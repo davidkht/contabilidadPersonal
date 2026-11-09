@@ -9,76 +9,95 @@ from PIL import Image, ImageTk
 class App(tk.Tk):
 
     def __init__(self, title):
+        """
+        Initializes the main application window.
+        
+        Args:
+            title (str): The window title
+        """
         super().__init__()
         self.title(title)
-        # self.resizable(False,False)
-        self.home_geometry=[880,420]
-        self.mov_geometry=[950,380]        
+        
+        # Window geometry configurations - optimized to fit content without wasted space
+        self.home_geometry=[1120, 550]  # Compact but wide enough for the table + right panel
+        self.mov_geometry=[1150, 550]   # Slightly wider for the movement view
         self.default_width = self.home_geometry[0]
-        self.extended_width = self.home_geometry[0] + 600
+        self.extended_width = self.home_geometry[0] + 450 # Add just enough space for the side form
         self.height = self.home_geometry[1]
 
-        self.icono_e_imagen()# Método para establecer el icono de la aplicación
+        # Configure global grid weights for responsiveness
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(1, weight=1)
 
-        self.current_frame = None  # Inicialmente no hay frame visible
+        self.icono_e_imagen()  # Method to set the application icon
+
+        self.current_frame = None  # Initially no frame is visible
         
         self.place_widgets()
 
+        # Check and calculate interest for debts with interest rates
         main.verificar_y_calcular_intereses()
 
-        self.show_home()# Muestra el primer frame
+        self.show_home()  # Show the first frame
 
-        # Manejar el evento de cierre de la ventana
+        # Handle the window close event
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-        #Correr la app
-        self.mainloop()# Inicia el bucle principal de la aplicación
+        #Run the app
+        self.mainloop()  # Start the main event loop of the application
 
     def place_widgets(self):
-
-        self.home_button=ttk.Button(self,text="Inicio",image=self.mi_imagen,command= self.show_home)
-        self.home_button.grid(row=0,column=0,sticky='w',padx=(10,10),pady=(10,0))
+        """
+        Places the main navigation widgets (like the home button) in the window.
+        """
+        self.home_button=ttk.Button(self, text=" 🏠 Inicio", image=self.mi_imagen, command=self.show_home, width=15)
+        self.home_button.grid(row=0, column=0, sticky='w', padx=(15,15), pady=(15,10))
 
     def place_tree(self):
-        self.tree=ttk.Treeview(self.tree_frame,height=13)
+        """
+        Creates and configures the main TreeView widget that displays all debt records.
+        The tree shows a table with person information and their current debt status.
+        """
+        self.tree=ttk.Treeview(self.tree_frame,height=18)
         self.tree.grid(row=0,column=0,sticky='nsew',padx=(10,10),pady=(10,10))
-        # Limpia cualquier entrada anterior en el TreeView para evitar duplicaciones o datos obsoletos.
+        # Clear any previous entries in the TreeView to avoid duplications or stale data.
         for i in self.tree.get_children():
             self.tree.delete(i) 
 
         df=main.consultar_deudas()
-        # Agrega y configura las columnas del TreeView basándose en las columnas del DataFrame.
+        # Add and configure columns in the TreeView based on the DataFrame columns.
         columns = list(df.columns)
         self.tree["show"] = "headings"
         self.tree['columns'] = columns
         for col in columns:
-            self.tree.heading(col, text=col)
-            self.tree.column(col, width=100,anchor='center')
+            self.tree.heading(col, text=col.upper())  # Display column headers in uppercase for better aesthetics
+            self.tree.column(col, width=100, anchor='center')
 
-        # Ajustes específicos para algunas columnas, estableciendo un ancho personalizado para mejorar la visibilidad.
-        self.tree.column('id', width=15)
-        self.tree.column('nombre', width=70)
-        self.tree.column('apellido',width=70)
-        self.tree.column('telefono',width=70)
-        self.tree.column('email',width=140)
-        self.tree.column('monto',width=100)
-        self.tree.column('interes',width=60)
-        self.tree.column('fecha',width=100)
+        # Specific adjustments for certain columns, setting custom widths for better visibility.
+        self.tree.column('id', width=30)
+        self.tree.column('nombre', width=85)
+        self.tree.column('apellido', width=85)
+        self.tree.column('documento', width=95)
+        self.tree.column('telefono', width=85)
+        self.tree.column('email', width=140)
+        self.tree.column('monto', width=100)
+        self.tree.column('interes', width=60)
+        self.tree.column('fecha', width=90)
 
-        # Inserta los datos del DataFrame en el TreeView fila por fila.
+        # Insert DataFrame data into the TreeView row by row.
         for index, row in df.iterrows():
-            # Formatear el valor de 'monto' como moneda
+            # Format the 'monto' value as currency
             row['monto'] = f"${float(row['monto']):,.2f}"
             self.tree.insert("", tk.END, values=list(row))
 
-
+        # Add a scrollbar for the TreeView
         scrollbar = ttk.Scrollbar(self.tree_frame, orient=tk.VERTICAL, command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
         scrollbar.grid(row=0,column=1,sticky='ns')
 
     def icono_e_imagen(self):
         # Obtén el directorio del script
-        icon_path = os.path.join(script_directory, '..', 'docs', 'icono.ico')
+        icon_path = os.path.join(script_directory, '..', 'docs', 'icono.svg')
         
         # Verifica si el archivo existe
         if not os.path.exists(icon_path):
@@ -90,9 +109,6 @@ class App(tk.Tk):
         except Exception as e:
             print(f"Error al establecer el ícono: {e}")
 
-        imagen_ico = Image.open(os.path.join(script_directory,'..',"docs","miimagen.ico"))
-        self.mi_imagen=imagen_ico.resize((32,32))
-        self.mi_imagen = ImageTk.PhotoImage(self.mi_imagen)
 
     def on_button_click(self):
         selected_item = self.tree.selection()
@@ -114,8 +130,10 @@ class App(tk.Tk):
             messagebox.showerror("Error", "No se ha seleccionado ningún elemento.")
 
     def show_home(self):
-
-        #Logic
+        """
+        Displays the home screen with the main debt table and action buttons.
+        """
+        #Logic to clear previous frame
         if self.current_frame:
             self.current_frame.grid_forget()
             self.current_frame.destroy()
@@ -125,25 +143,26 @@ class App(tk.Tk):
         self.current_frame.grid(row=1, column=0, sticky='nsew')
 
         #Widgets
-        ##Frame for tree 
-        self.tree_frame=ttk.LabelFrame(self.current_frame,text="Lista de Deudas")
-        self.tree_frame.grid(row=0,column=0,padx=(10,10),pady=(10,10))
+        ##Frame for tree - Main debt list display
+        self.tree_frame=ttk.LabelFrame(self.current_frame, text="📊 Lista de Deudas", padding=(5, 5))
+        self.tree_frame.grid(row=0, column=0, padx=(15,10), pady=(15,15), sticky='nsew')
         self.place_tree()
 
+        # Right panel with action buttons
         self.right_frame=RightFrame(self.current_frame)
-        self.right_frame.grid(row=0,column=1,padx=(10,10),pady=(10,10))
+        self.right_frame.grid(row=0, column=1, padx=(10,15), pady=(15,15), sticky='nsew')
       
         self.geometry(f"{self.home_geometry[0]}x{self.home_geometry[1]}")
 
     def create_extra_frame(self,parametro,values=None):
         if parametro=="Nuevo":
             self.extra_frame = RegistroFrame(self.current_frame)
-            self.extra_frame.grid(row=0,column=3,padx=10,pady=10)
+            self.extra_frame.grid(row=0,column=3,padx=10,pady=10, sticky='nsew')
             self.geometry(f"{self.extended_width}x{self.height}")
         elif parametro == "Editar":
             self.extra_frame = EditarFrame(self.current_frame,values)
-            self.extra_frame.grid(row=0,column=3,padx=10,pady=10)
-            self.geometry(f"{1250}x{self.height}")
+            self.extra_frame.grid(row=0,column=3,padx=10,pady=10, sticky='nsew')
+            self.geometry(f"{self.extended_width}x{self.height}")
 
     def create_mov_frame(self,values):
         """
@@ -160,6 +179,10 @@ class App(tk.Tk):
         self.geometry(f"{self.mov_geometry[0]}x{self.mov_geometry[1]}")
 
     def create_detalles_frame(self, values):
+        """
+        Creates and displays the detailed view frame for a selected person.
+        Shows transaction history, graph visualization, and action buttons.
+        """
         if self.current_frame:
             self.current_frame.grid_forget()
             self.current_frame.destroy()
@@ -167,7 +190,8 @@ class App(tk.Tk):
 
         self.current_frame = DetallesFrame(self, values)
         self.current_frame.grid(row=1, column=0, sticky='nsew')
-        self.geometry("1260x550")
+        # Ensure the window is large enough for the detailed view
+        self.geometry(f"{self.home_geometry[0]}x{self.home_geometry[1]}")
 
     def borrar_registro(self):
         selected_item = self.tree.selection()
@@ -204,40 +228,51 @@ class App(tk.Tk):
             messagebox.showerror("Error", "No se ha seleccionado ningún elemento.")
 
 class RightFrame(ttk.Frame):
-
+    """
+    Right panel containing action buttons for managing debt records.
+    Separated into management actions (create/delete) and operational actions (edit/view/export).
+    """
     def __init__(self,parent):
-
         super().__init__(parent) 
 
-        self.top_frame=ttk.LabelFrame(self,text='Gestión de Registro')
-        self.top_frame.grid(row=0,column=0,padx=(10,10),pady=(10,10))
+        # Top frame for record management actions
+        self.top_frame=ttk.LabelFrame(self, text='📋 Gestión de Registro', padding=(10, 10))
+        self.top_frame.grid(row=0, column=0, padx=(10,10), pady=(10,5), sticky='ew')
 
-        self.bottom_frame=ttk.LabelFrame(self,text='Acciones Disponibles')
-        self.bottom_frame.grid(row=1,column=0,padx=(10,10),pady=(10,10))
+        # Bottom frame for available actions on records
+        self.bottom_frame=ttk.LabelFrame(self, text='⚡ Acciones Disponibles', padding=(10, 10))
+        self.bottom_frame.grid(row=1, column=0, padx=(10,10), pady=(5,10), sticky='ew')
 
         self.buttons(parent)
 
     def buttons(self,parent):
+        """
+        Creates all action buttons with improved styling and consistent sizing.
+        """
+        button_width = 22  # Consistent button width for better aesthetics
 
-        #Top Frame
-        self.delete_boton=ttk.Button(self.top_frame,text='Borrar Registro',width=20, 
-                                command=self.master.borrar_registro)
-        self.delete_boton.grid(row=0,column=0,padx=(10,10),pady=(10,10))
-
-        self.registrar_boton=ttk.Button(self.top_frame,text='Nuevo Registro',width=20, 
+        #Top Frame - Record Management
+        self.registrar_boton=ttk.Button(self.top_frame, text='➕ Nuevo Registro', width=button_width, 
                                    command=lambda p="Nuevo": self.master.extra_frame(p)) 
-        self.registrar_boton.grid(row=1,column=0,padx=(10,10),pady=(10,10))
+        self.registrar_boton.grid(row=0, column=0, padx=(12,12), pady=(10,8), sticky='ew')
 
-        #Bottom Frame
-        self.movimiento_boton=ttk.Button(self.bottom_frame,text='Registrar Movimiento',width=20,
+        self.delete_boton=ttk.Button(self.top_frame, text='🗑️ Borrar Registro', width=button_width, 
+                                command=self.master.borrar_registro)
+        self.delete_boton.grid(row=1, column=0, padx=(12,12), pady=(8,10), sticky='ew')
+
+        #Bottom Frame - Operational Actions
+        self.editar_boton=ttk.Button(self.bottom_frame, text='✏️ Editar Persona', width=button_width, command=parent.editar)
+        self.editar_boton.grid(row=0, column=0, padx=(12,12), pady=(10,8), sticky='ew')
+
+        self.movimiento_boton=ttk.Button(self.bottom_frame, text='💰 Registrar Movimiento', width=button_width,
                                     command=parent.on_button_click)
-        self.movimiento_boton.grid(row=0,column=0,padx=(10,10),pady=(10,10))
-        self.consultar_boton=ttk.Button(self.bottom_frame,text='Consultar',width=20, command=parent.mostrar_detalles)
-        self.consultar_boton.grid(row=1,column=0,padx=(10,10),pady=(10,10))
-        self.editar_boton=ttk.Button(self.bottom_frame,text='Editar',width=20,command=parent.editar)
-        self.editar_boton.grid(row=2,column=0,padx=(10,10),pady=(10,10))
-        self.exportar_boton = ttk.Button(self.bottom_frame, text='Exportar Datos', width=20, command=self.exportar_datos)
-        self.exportar_boton.grid(row=3, column=0, padx=(10, 10), pady=(10, 10))
+        self.movimiento_boton.grid(row=1, column=0, padx=(12,12), pady=(8,8), sticky='ew')
+
+        self.consultar_boton=ttk.Button(self.bottom_frame, text='📊 Consultar Detalles', width=button_width, command=parent.mostrar_detalles)
+        self.consultar_boton.grid(row=2, column=0, padx=(12,12), pady=(8,8), sticky='ew')
+
+        self.exportar_boton = ttk.Button(self.bottom_frame, text='📁 Exportar Datos', width=button_width, command=self.exportar_datos)
+        self.exportar_boton.grid(row=3, column=0, padx=(12,12), pady=(8,10), sticky='ew')
 
     def exportar_datos(self):
         # Abrir el diálogo para guardar archivo
@@ -264,72 +299,92 @@ class RegistroFrame(ttk.Frame):
         self.widgets()
 
     def widgets(self):
-        #Label
-        registro_frame=ttk.LabelFrame(self,text="Nuevo registro")
-        registro_frame.grid(row=0, column=0,padx=(10,10),pady=(10,10))
+        """
+        Creates all input widgets for the new person registration form.
+        Includes fields for personal information, debt amount, and interest rate.
+        """
+        #LabelFrame container for the registration form
+        registro_frame=ttk.LabelFrame(self, text="Nuevo registro", padding=(15, 15))
+        registro_frame.grid(row=0, column=0, padx=(10,10), pady=(10,10))
 
-        #Variables de texto
+        #Text variables to store input values
         self.nombre_var=tk.StringVar()
         self.apellido_var=tk.StringVar()
+        self.documento_var=tk.StringVar()
         self.tel_var=tk.StringVar()
         self.email_var=tk.StringVar()
         self.monto_var=tk.StringVar()
         self.interes_var=tk.StringVar()
 
-        # Campos de entrada
-        ttk.Label(registro_frame, text="Nombre").grid(row=0, column=0,padx=(10,5),pady=(15,5),sticky='nw')
-        entry_nombre = ttk.Entry(registro_frame,width=25,textvariable=self.nombre_var)
-        entry_nombre.grid(row=0, column=1,padx=(10,5),pady=(15,5),sticky='nw')
+        # Input fields with improved layout and spacing
+        # Row 0: Nombre and Apellido
+        ttk.Label(registro_frame, text="Nombre:").grid(row=0, column=0, padx=(10,5), pady=(15,10), sticky='e')
+        entry_nombre = ttk.Entry(registro_frame, width=25, textvariable=self.nombre_var)
+        entry_nombre.grid(row=0, column=1, padx=(5,15), pady=(15,10), sticky='w')
 
-        ttk.Label(registro_frame, text="Apellido").grid(row=0, column=2,padx=(10,5),pady=(15,5),sticky='nw')
-        entry_apellido = ttk.Entry(registro_frame,width=25,textvariable=self.apellido_var)
-        entry_apellido.grid(row=0, column=3,padx=(10,5),pady=(15,5),sticky='nw')
+        ttk.Label(registro_frame, text="Apellido:").grid(row=0, column=2, padx=(10,5), pady=(15,10), sticky='e')
+        entry_apellido = ttk.Entry(registro_frame, width=25, textvariable=self.apellido_var)
+        entry_apellido.grid(row=0, column=3, padx=(5,15), pady=(15,10), sticky='w')
 
-        ttk.Label(registro_frame, text="Teléfono").grid(row=1, column=0,padx=(10,5),pady=(10,5),sticky='nw')
-        entry_telefono = ttk.Entry(registro_frame,width=25,textvariable=self.tel_var)
-        entry_telefono.grid(row=1, column=1,padx=(10,5),pady=(10,5),sticky='nw')
+        # Row 1: Documento ID
+        ttk.Label(registro_frame, text="Documento ID:").grid(row=1, column=0, padx=(10,5), pady=(10,10), sticky='e')
+        entry_documento = ttk.Entry(registro_frame, width=25, textvariable=self.documento_var)
+        entry_documento.grid(row=1, column=1, padx=(5,15), pady=(10,10), sticky='w')
 
-        ttk.Label(registro_frame, text="Email").grid(row=1, column=2,padx=(10,5),pady=(10,5),sticky='nw')
-        entry_email = ttk.Entry(registro_frame,width=25,textvariable=self.email_var)
-        entry_email.grid(row=1, column=3,padx=(10,5),pady=(10,5),sticky='nw')
+        # Row 1 continued: Teléfono
+        ttk.Label(registro_frame, text="Teléfono:").grid(row=1, column=2, padx=(10,5), pady=(10,10), sticky='e')
+        entry_telefono = ttk.Entry(registro_frame, width=25, textvariable=self.tel_var)
+        entry_telefono.grid(row=1, column=3, padx=(5,15), pady=(10,10), sticky='w')
 
-        ttk.Label(registro_frame, text="Monto adeudado").grid(row=2, column=0,padx=(10,5),pady=(10,5),sticky='nw')
-        entry_monto = NumericEntry(registro_frame,width=25,textvariable=self.monto_var)
-        entry_monto.grid(row=2, column=1,padx=(10,5),pady=(10,5),sticky='nw')
+        # Row 2: Email
+        ttk.Label(registro_frame, text="Email:").grid(row=2, column=0, padx=(10,5), pady=(10,10), sticky='e')
+        entry_email = ttk.Entry(registro_frame, width=25, textvariable=self.email_var)
+        entry_email.grid(row=2, column=1, padx=(5,15), pady=(10,10), sticky='w')
 
-        ttk.Label(registro_frame, text="Tasa de interés").grid(row=2, column=2,padx=(10,5),pady=(10,5),sticky='nw')
-        entry_interes = NumericEntry(registro_frame,width=25,textvariable=self.interes_var)
-        entry_interes.grid(row=2, column=3,padx=(10,5),pady=(10,5),sticky='nw')
+        # Row 2 continued: Monto adeudado
+        ttk.Label(registro_frame, text="Monto adeudado:").grid(row=2, column=2, padx=(10,5), pady=(10,10), sticky='e')
+        entry_monto = NumericEntry(registro_frame, width=25, textvariable=self.monto_var)
+        entry_monto.grid(row=2, column=3, padx=(5,15), pady=(10,10), sticky='w')
 
-        ttk.Label(registro_frame, text="Descripción").grid(row=3, column=0,padx=(10,5),pady=(10,5),sticky='nw')
-        self.entry_descripcion = tk.Text(registro_frame,height=6,width=19)
-        self.entry_descripcion.grid(row=3, column=1, rowspan= 3,padx=(10,5),pady=(10,20),sticky='nw')
+        # Row 3: Tasa de interés
+        ttk.Label(registro_frame, text="Tasa de interés:").grid(row=3, column=0, padx=(10,5), pady=(10,10), sticky='e')
+        entry_interes = NumericEntry(registro_frame, width=25, textvariable=self.interes_var)
+        entry_interes.grid(row=3, column=1, padx=(5,15), pady=(10,10), sticky='w')
 
-        #Botones
-        guardar=ttk.Button(registro_frame,text="Registrar Deuda",command=self.guardar_registro)
-        cancelar=ttk.Button(registro_frame,text="Cancelar Registro",command=self.cancelar_registro)
+        # Row 3-5: Descripción (spans multiple rows)
+        ttk.Label(registro_frame, text="Descripción:").grid(row=3, column=2, padx=(10,5), pady=(10,10), sticky='ne')
+        self.entry_descripcion = tk.Text(registro_frame, height=6, width=25, wrap=tk.WORD)
+        self.entry_descripcion.grid(row=3, column=3, rowspan=3, padx=(5,15), pady=(10,10), sticky='nw')
 
-        guardar.grid(row=3,column=2,columnspan=2,padx=(10,5),pady=(10,5),sticky='nsew')
-        cancelar.grid(row=4,column=2,columnspan=2,padx=(10,5),pady=(10,20),sticky='nsew')
+        #Buttons with improved styling
+        guardar=ttk.Button(registro_frame, text="✓ Registrar Deuda", command=self.guardar_registro, width=22)
+        cancelar=ttk.Button(registro_frame, text="✗ Cancelar Registro", command=self.cancelar_registro, width=22)
+
+        guardar.grid(row=4, column=0, columnspan=2, padx=(15,15), pady=(15,20), sticky='ew')
+        cancelar.grid(row=5, column=0, columnspan=2, padx=(15,15), pady=(5,20), sticky='ew')
 
     def guardar_registro(self):
         """
-        Función para guardar el registro escrito por el usuario en la base de datos.
-        Primero verifica que todos los campos estén llenos. Si interés o monto están vacios,
-        toma como defecto 0.0 si el usuario acepta. Si no acepta, no hace nada.
+        Saves the user-entered record to the database.
+        First verifies that all required fields are filled. If interest or amount are empty,
+        it defaults to 0.0 if the user accepts. If not accepted, it does nothing.
         """
+        # Validate that required fields are not empty
         if (self.nombre_var.get() == '' or self.apellido_var.get() == '' 
             or self.tel_var.get()=='' or self.email_var.get()==''):
 
-            messagebox.showerror("Error","Llene todos los campos de información")
+            messagebox.showerror("Error","Por favor llene todos los campos de información requeridos (Nombre, Apellido, Teléfono, Email)")
         else:
             try:
+                # Attempt to register the person with all provided data including documento
                 main.registrar_persona(self.nombre_var.get(), self.apellido_var.get(),
-                               self.tel_var.get(),self.email_var.get(),
-                               float(self.monto_var.get()),float(self.interes_var.get()),
-                               self.entry_descripcion.get("1.0", tk.END))
+                               self.tel_var.get(), self.email_var.get(),
+                               float(self.monto_var.get()), float(self.interes_var.get()),
+                               self.entry_descripcion.get("1.0", tk.END), self.documento_var.get())
+                messagebox.showinfo("Éxito", "Registro guardado exitosamente")
                 self.master.home()
             except ValueError:
+                # Handle case where monto or interes are empty or invalid
                 sin_valor=messagebox.askyesno("Sin Valor","""
                                                No ingresó valores en monto y/o
                                                interés. Se utilizará 0.0 por 
@@ -337,8 +392,9 @@ class RegistroFrame(ttk.Frame):
                                                ¿Está de acuerdo?""")
                 if sin_valor:
                     main.registrar_persona(self.nombre_var.get(), self.apellido_var.get(),
-                               self.tel_var.get(),self.email_var.get(),
-                               0.0, 0.0, self.entry_descripcion.get("1.0", tk.END))
+                               self.tel_var.get(), self.email_var.get(),
+                               0.0, 0.0, self.entry_descripcion.get("1.0", tk.END), self.documento_var.get())
+                    messagebox.showinfo("Éxito", "Registro guardado exitosamente")
                     self.master.home()
             except PermissionError:
                 messagebox.showerror("Error fatal","No pueden haber registros con el mismo nombre y apellido")
@@ -347,49 +403,73 @@ class RegistroFrame(ttk.Frame):
         self.master.home()
 
 class EditarFrame(ttk.Frame):
+    """
+    Frame for editing existing person information (UPSERT operation).
+    Allows modification of documento, telefono, and email fields.
+    """
     def __init__(self, parent, values):
         super().__init__(parent)
-        self.tel_var = tk.StringVar(value=str(values[3]))
-        self.email_var = tk.StringVar(value=str(values[4]))
+        # Initialize text variables with current values from the database
+        # values array: [id, nombre, apellido, documento, telefono, email, monto, interes, fecha]
+        self.documento_var = tk.StringVar(value=str(values[3]) if values[3] else '')
+        self.tel_var = tk.StringVar(value=str(values[4]) if values[4] else '')
+        self.email_var = tk.StringVar(value=str(values[5]) if values[5] else '')
         self.widgets(values)
 
     def widgets(self, values):
-        frame_test = ttk.LabelFrame(self,text="Editar información de:")
-        frame_test.grid(row=0, column=0)
+        """
+        Creates the form widgets for editing person information.
+        """
+        frame_test = ttk.LabelFrame(self, text="Editar información de:", padding=(20, 15))
+        frame_test.grid(row=0, column=0, padx=(15,15), pady=(15,15))
 
-        # Crear una fuente en negrita
-        bold_font = ("TkDefaultFont", 12, "bold")
+        # Create a bold font for the person's name
+        bold_font = ("TkDefaultFont", 14, "bold")
 
-        name_label = ttk.Label(frame_test, text=f"{values[1]} {values[2]}",font=bold_font)
-        name_label.grid(row=0, column=0, columnspan=2, sticky='nsew', padx=10, pady=10)
+        # Display the person's name at the top
+        name_label = ttk.Label(frame_test, text=f"{values[1]} {values[2]}", font=bold_font)
+        name_label.grid(row=0, column=0, columnspan=2, sticky='nsew', padx=15, pady=(15,20))
 
-        ttk.Label(frame_test, text="Teléfono").grid(row=1, column=0, pady=5, padx=(15,0),sticky='w')
-        ttk.Label(frame_test, text="Email").grid(row=2, column=0, pady=5, padx=(15,0),sticky='w')
+        # Input fields for editable information
+        ttk.Label(frame_test, text="Documento ID:").grid(row=1, column=0, pady=8, padx=(15,10), sticky='e')
+        entry_documento = ttk.Entry(frame_test, textvariable=self.documento_var, width=30)
+        entry_documento.grid(row=1, column=1, pady=8, padx=(0,15), sticky='w')
 
-        entry_tel = ttk.Entry(frame_test, textvariable=self.tel_var, width=25)
-        entry_tel.grid(row=1, column=1, pady=5, padx=(0,15),sticky='w')
+        ttk.Label(frame_test, text="Teléfono:").grid(row=2, column=0, pady=8, padx=(15,10), sticky='e')
+        entry_tel = ttk.Entry(frame_test, textvariable=self.tel_var, width=30)
+        entry_tel.grid(row=2, column=1, pady=8, padx=(0,15), sticky='w')
 
-        entry_email = ttk.Entry(frame_test, textvariable=self.email_var, width=25)
-        entry_email.grid(row=2, column=1, pady=5, padx=(0,15),sticky='w')
+        ttk.Label(frame_test, text="Email:").grid(row=3, column=0, pady=8, padx=(15,10), sticky='e')
+        entry_email = ttk.Entry(frame_test, textvariable=self.email_var, width=30)
+        entry_email.grid(row=3, column=1, pady=8, padx=(0,15), sticky='w')
 
-        boton_ok = ttk.Button(frame_test, text='OK', width=20,
+        # Action buttons with improved styling
+        boton_ok = ttk.Button(frame_test, text='✓ Guardar Cambios', width=22,
                               command=lambda: self.aceptar_cambios_editar_registro(
-                                  values[1], values[2], self.tel_var.get(), self.email_var.get()))
+                                  values[1], values[2], self.tel_var.get(), self.email_var.get(), self.documento_var.get()))
 
-        boton_ok.grid(row=3, column=1, pady=10, padx=(5,20), sticky='e')
+        boton_ok.grid(row=4, column=1, pady=(20,15), padx=(5,20), sticky='e')
 
-        boton_cancelar = ttk.Button(frame_test, text='Cancelar', width=20,
+        boton_cancelar = ttk.Button(frame_test, text='✗ Cancelar', width=22,
                                     command=self.master.home)
-        boton_cancelar.grid(row=3, column=0, pady=10, padx=(20,5), sticky='w')
+        boton_cancelar.grid(row=4, column=0, pady=(20,15), padx=(20,5), sticky='w')
 
-    def aceptar_cambios_editar_registro(self, nombre, apellido, telefono, email):
-
-        main.editar_registro(nombre, apellido, telefono, email)
+    def aceptar_cambios_editar_registro(self, nombre, apellido, telefono, email, documento):
+        """
+        Accepts the changes and updates the database record with the new information.
+        """
+        main.editar_registro(nombre, apellido, telefono, email, documento)
+        messagebox.showinfo("Éxito", "Cambios guardados exitosamente")
         self.master.home()
 
 class HomeFrame(ttk.Frame):
     def __init__(self,parent):
         super().__init__(parent)
+        # Configure weights so the tree takes up available space
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=0) # Right frame fixed width
+        self.columnconfigure(3, weight=0) # Extra frame fixed width
+        self.rowconfigure(0, weight=1)
 
     def extra_frame(self,parametro="Nuevo"):
         self.master.create_extra_frame(parametro)
@@ -416,61 +496,76 @@ class HomeFrame(ttk.Frame):
         self.master.editar()
         
 class MovimientoFrame(ttk.Frame):
-
+    """
+    Frame for registering new debt transactions for a selected person.
+    Displays the person's transaction history and allows adding new movements.
+    """
     def __init__(self,parent,values):
-
-        super().__init__(parent)        
+        super().__init__(parent)
+        # Extract values from the array: [id, nombre, apellido, documento, telefono, email, monto, interes, fecha]
         self.nombre   = values[1]
         self.apellido = values[2]
-        self.monto    = values[5]
+        self.monto    = values[6]  # Updated index after adding documento column
+
+        # Configure grid for resizing
+        self.columnconfigure(0, weight=1) # Tree frame
+        self.columnconfigure(1, weight=0) # Movement input frame
+        self.rowconfigure(0, weight=1)
 
         self.widgets()
 
     def widgets(self):
+        """
+        Creates the form widgets for registering new debt movements.
+        Includes current debt display, movement input, and quick adjustment buttons.
+        """
+        #LabelFrame container with improved padding
+        self.mov_frame=ttk.LabelFrame(self, text='💰 Nuevo Movimiento', padding=(15, 15))
+        self.mov_frame.grid(row=0, column=1, padx=15, pady=20)
 
-        #LabelFrame
-        self.mov_frame=ttk.LabelFrame(self,text='Nuevo Movimiento')
-        self.mov_frame.grid(row=0,column=1,padx=10,pady=20)
-        #Labels
-        ttk.Label(self.mov_frame,text="Deuda actual").grid(row=1,column=0,padx=10,pady=10,sticky='nw')
-        ttk.Label(self.mov_frame,text="Movimiento").grid(row=2,column=0,padx=10,pady=10,sticky='nw')
-        ttk.Label(self.mov_frame,text="Deuda actualizada").grid(row=4,column=0,padx=10,pady=10,sticky='nw')
-        ttk.Label(self.mov_frame,text="Descripción").grid(row=5,column=0,padx=10,pady=10,sticky='nw')
+        # Style configuration for labels - make them more prominent
+        label_font = ("TkDefaultFont", 10, "bold")
 
+        #Labels with improved styling
+        ttk.Label(self.mov_frame, text="Deuda actual:", font=label_font).grid(row=1, column=0, padx=12, pady=12, sticky='e')
+        ttk.Label(self.mov_frame, text="Movimiento:", font=label_font).grid(row=2, column=0, padx=12, pady=12, sticky='e')
+        ttk.Label(self.mov_frame, text="Deuda actualizada:", font=label_font).grid(row=4, column=0, padx=12, pady=12, sticky='e')
+        ttk.Label(self.mov_frame, text="Descripción:", font=label_font).grid(row=5, column=0, padx=12, pady=12, sticky='ne')
 
-        #Entries
+        #Entry widgets with improved sizing
         self.deuda_var = tk.DoubleVar(value=float(self.monto.replace("$", "").replace(",", "")))
-        deuda_entry=ttk.Entry(self.mov_frame,textvariable=self.deuda_var,state='readonly')
-        deuda_entry.grid(row=1,column=1,padx=10,pady=10,sticky='nsew')
+        deuda_entry=ttk.Entry(self.mov_frame, textvariable=self.deuda_var, state='readonly', width=25)
+        deuda_entry.grid(row=1, column=1, padx=(5,12), pady=12, sticky='ew')
         
-
+        # Movimiento entry with quick adjustment buttons
         self.movimiento_entry_value=tk.DoubleVar(value=0.0)
-        movimiento_entry=NumericEntry(self.mov_frame,textvariable=self.movimiento_entry_value,width=20)
-        movimiento_entry.grid(row=2,column=1,padx=(0,10),pady=10,sticky='ns')
+        movimiento_entry=NumericEntry(self.mov_frame, textvariable=self.movimiento_entry_value, width=25)
+        movimiento_entry.grid(row=2, column=1, padx=(5,12), pady=12, sticky='ew')
         self.movimiento_entry_value.trace_add("write", self.update_value)
 
+        # Nueva deuda (calculated automatically)
         self.nuevadeuda_entry_var = tk.DoubleVar()
+        nuevadeuda_entry=ttk.Entry(self.mov_frame, textvariable=self.nuevadeuda_entry_var, state='readonly', width=25)
+        nuevadeuda_entry.grid(row=4, column=1, padx=(5,12), pady=12, sticky='ew')
 
-        nuevadeuda_entry=ttk.Entry(self.mov_frame,textvariable=self.nuevadeuda_entry_var,state='readonly')
-        nuevadeuda_entry.grid(row=4,column=1,padx=10,pady=10,sticky='nsew')
+        # Description text area
+        self.descr_entry=tk.Text(self.mov_frame, height=4, width=25, wrap=tk.WORD)
+        self.descr_entry.grid(row=5, column=1, padx=(5,12), pady=12, sticky='ew')
 
+        #Quick adjustment buttons for movement (positioned over the movement entry)
+        menos=ttk.Button(self.mov_frame, text='- 10k', width=5, command=lambda x=False:self.suma(x))
+        menos.grid(row=3, column=1, sticky='w', padx=(5,0), pady=0)
+        mas=ttk.Button(self.mov_frame, text='+ 10k', width=5, command=lambda x=True:self.suma(x))
+        mas.grid(row=3, column=1, sticky='e', padx=(0,12), pady=0)
 
-        self.descr_entry=tk.Text(self.mov_frame,height=3,width=20)
-        self.descr_entry.grid(row=5,column=1,padx=(10,10),pady=10,sticky='ns')
+        #Action buttons with improved styling
+        guardar=ttk.Button(self.mov_frame, text="✓ Guardar Movimiento", command=self.save_and_close, width=22)
+        guardar.grid(row=6, column=1, padx=12, pady=(15,10), sticky='ew')
 
-        #Buttons
-        borrar=ttk.Button(self.mov_frame,text="Limpiar",command=self.limpiar_datos)
-        guardar=ttk.Button(self.mov_frame,text="Guardar",command=self.save_and_close)
+        borrar=ttk.Button(self.mov_frame, text="🗑️ Limpiar Campos", command=self.limpiar_datos, width=22)
+        borrar.grid(row=6, column=0, padx=12, pady=(15,10), sticky='ew')
 
-        borrar.grid(row= 6,column=0,padx=10,pady=10,sticky='nsew')
-        guardar.grid(row= 6,column=1,padx=10,pady=10,sticky='nsew')
-
-        #Botones de suma
-        mas=ttk.Button(self.mov_frame,text='+',width=2,command=lambda x=True:self.suma(x))
-        menos=ttk.Button(self.mov_frame,text='-',width=2,command=lambda x=False:self.suma(x))
-        mas.grid(row=2,column=1,sticky='e',padx=(0,10))
-        menos.grid(row=2,column=1,sticky='w',padx=(0,0))
-        #Tree
+        #Tree display for transaction history
         self.place_tree(self.nombre, self.apellido)
 
     def suma(self, mas_o_menos):
@@ -510,11 +605,15 @@ class MovimientoFrame(ttk.Frame):
         self.descr_entry.delete("1.0", tk.END)
 
     def place_tree(self,nombre, apellido):
-
-        tree_frame=ttk.LabelFrame(self,text=f"{self.nombre.upper()} {self.apellido.upper()}")
-        tree_frame.grid(row=0,column=0,sticky='nsew',padx=(10,10),pady=(10,10))
-        self.tree=ttk.Treeview(tree_frame)
-        self.tree.grid(row=0,column=0,sticky='nsew',padx=(10,10),pady=(10,10))
+        """
+        Creates a TreeView to display the transaction history for the selected person.
+        Height is set to 18 to match the main screen tree for consistency.
+        """
+        tree_frame=ttk.LabelFrame(self, text=f"{self.nombre.upper()} {self.apellido.upper()}", padding=(5, 5))
+        tree_frame.grid(row=0, column=0, sticky='nsew', padx=(10,10), pady=(10,10))
+        # Set height=18 to match the main screen tree height for consistency
+        self.tree=ttk.Treeview(tree_frame, height=18)
+        self.tree.grid(row=0, column=0, sticky='nsew', padx=(10,10), pady=(10,10))
         # Limpia cualquier entrada anterior en el TreeView para evitar duplicaciones o datos obsoletos.
         for i in self.tree.get_children():
             self.tree.delete(i) 
@@ -568,57 +667,81 @@ class MovimientoFrame(ttk.Frame):
             messagebox.showerror("Error", "No hay movimiento para registrar")
 
 class DetallesFrame(ttk.Frame):
+    """
+    Frame for displaying detailed information about a person's debt history.
+    Shows a graph of debt evolution over time and provides export/email options.
+    """
     def __init__(self,master,values):
         super().__init__(master)
+        # Extract values from the array: [id, nombre, apellido, documento, telefono, email, monto, interes, fecha]
         self.nombre   = values[1]
         self.apellido = values[2]
-        self.telefono = values[3]
-        self.email    = values[4]
-        self.monto    = values[5]
-        self.interes  = values[6]
+        self.documento= values[3]
+        self.telefono = values[4]  # Updated index after adding documento column
+        self.email    = values[5]  # Updated index after adding documento column
+        self.monto    = values[6]  # Updated index after adding documento column
+        self.interes  = values[7]  # Updated index after adding documento column
+        
+        # Configure grid for resizing
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+        self.rowconfigure(0, weight=1)
+        
         self.widgets_detalles()
 
     def widgets_detalles(self):
-        #Treeview
-        self.place_tree(self.nombre,self.apellido)
+        """
+        Creates the detailed view widgets including graph visualization and action buttons.
+        """
+        #Treeview with transaction history
+        self.place_tree(self.nombre, self.apellido)
 
-        #LabelFrame
-        detalles_frame=ttk.LabelFrame(self,text='Movimientos')
-        detalles_frame.grid(row=0,column=0,padx=10,pady=20,rowspan=2,sticky='nsew')
+        #LabelFrame for graph visualization
+        detalles_frame=ttk.LabelFrame(self, text='📈 Historial de Movimientos', padding=(15, 15))
+        detalles_frame.grid(row=0, column=0, padx=15, pady=20, rowspan=2, sticky='nsew')
 
+        # Generate the debt history graph
         output_path = 'historial_movimientos.png'
         main.generar_grafica(self.nombre, self.apellido, output_path)
 
-        # Cargar la imagen generada
+        # Load the generated image
         img = Image.open(output_path)
         img_tk = ImageTk.PhotoImage(img)
 
-        # Mostrar la imagen en un Label
-        label = tk.Label(detalles_frame, image=img_tk,width=600)
-        label.image = img_tk  # Mantener una referencia a la imagen para evitar que se recoja la basura
-        label.grid(row=0, column=0, columnspan=2,rowspan=2, padx=10, pady=10)
+        # Display the image in a Label
+        label = tk.Label(detalles_frame, image=img_tk, width=600)
+        label.image = img_tk  # Keep a reference to prevent garbage collection
+        label.grid(row=0, column=0, columnspan=2, rowspan=2, padx=15, pady=15)
 
-        #LabelFrame
-        botones_frame=ttk.LabelFrame(self,text='Acciones')
-        botones_frame.grid(row=1,column=1,padx=5,pady=(5,30),sticky='nsew')
+        #LabelFrame for action buttons
+        botones_frame=ttk.LabelFrame(self, text='⚡ Acciones Disponibles', padding=(15, 15))
+        botones_frame.grid(row=1, column=1, padx=10, pady=(5,30), sticky='nsew')
 
-        label_telefono=ttk.Label(botones_frame,text=f"¿Llamar?: {str(self.telefono)[0:3]}-{str(self.telefono)[3:6]}-{str(self.telefono)[6:]}")
-        label_telefono.grid(row=1,column=3,columnspan=1,sticky='nsew',padx=(10, 10))
+        # Display contact information
+        telefono_formatted = f"{str(self.telefono)[0:3]}-{str(self.telefono)[3:6]}-{str(self.telefono)[6:]}" if self.telefono else "N/A"
+        label_info_font = ("TkDefaultFont", 10)
+        
+        label_telefono=ttk.Label(botones_frame, text=f"📞 Teléfono: {telefono_formatted}", font=label_info_font)
+        label_telefono.grid(row=1, column=0, columnspan=4, sticky='w', padx=(15, 15), pady=(10, 5))
 
-        boton_exportar = ttk.Button(botones_frame,text='Exportar',
+        label_email=ttk.Label(botones_frame, text=f"📧 Email: {self.email if self.email else 'N/A'}", font=label_info_font)
+        label_email.grid(row=2, column=0, columnspan=4, sticky='w', padx=(15, 15), pady=(5, 10))
+
+        # Action buttons with improved styling
+        boton_exportar = ttk.Button(botones_frame, text='📁 Exportar CSV', width=20,
                                   command=lambda n=self.nombre,a=self.apellido : self.exportar(n,a))
-        boton_email    = ttk.Button(botones_frame,text='Enviar E-mail',
+        boton_email    = ttk.Button(botones_frame, text='📧 Enviar E-mail', width=20,
                                   command=lambda n=self.nombre,a=self.apellido,e=self.email:self.enviar_email(n,a,e))
         
-        boton_exportar.grid(row=0, column=0, columnspan=2,padx=(10, 10), pady=(20, 20),sticky='nsew')
-        boton_email.grid(row=0, column=2,columnspan=2, padx=(10, 10), pady=(20, 20),sticky='nsew')
+        boton_exportar.grid(row=0, column=0, columnspan=2, padx=(15, 10), pady=(20, 20), sticky='ew')
+        boton_email.grid(row=0, column=2, columnspan=2, padx=(10, 15), pady=(20, 20), sticky='ew')
 
-        # Configurar peso para expansión
+        # Configure column weights for proper expansion
         botones_frame.columnconfigure(0, weight=1)
         botones_frame.columnconfigure(1, weight=1)
         botones_frame.columnconfigure(2, weight=1)
         botones_frame.columnconfigure(3, weight=1)
-        botones_frame.rowconfigure(1,weight=1)
+        botones_frame.rowconfigure(1, weight=1)
 
     def exportar(self,nombre,apellido):
         # Abrir el diálogo para guardar archivo
@@ -658,11 +781,15 @@ class DetallesFrame(ttk.Frame):
             messagebox.showerror("Error fatal",f'Ocurrió un error: {e}')
 
     def place_tree(self,nombre, apellido):
-
-        tree_frame=ttk.LabelFrame(self,text=f"{self.nombre.upper()} {self.apellido.upper()}")
-        tree_frame.grid(row=0,column=1,sticky='nsew',padx=(10,10),pady=(20,20))
-        self.tree=ttk.Treeview(tree_frame,height=12)
-        self.tree.grid(row=0,column=0,sticky='nsew',padx=(10,10),pady=(0,0))
+        """
+        Creates a TreeView to display the complete transaction history for the person.
+        Height is set to 18 to match the main screen tree for consistency.
+        """
+        tree_frame=ttk.LabelFrame(self, text=f"{self.nombre.upper()} {self.apellido.upper()}", padding=(5, 5))
+        tree_frame.grid(row=0, column=1, sticky='nsew', padx=(10,10), pady=(20,20))
+        # Set height=18 to match the main screen tree height for consistency
+        self.tree=ttk.Treeview(tree_frame, height=18)
+        self.tree.grid(row=0, column=0, sticky='nsew', padx=(10,10), pady=(0,0))
         # Limpia cualquier entrada anterior en el TreeView para evitar duplicaciones o datos obsoletos.
         for i in self.tree.get_children():
             self.tree.delete(i) 

@@ -1,0 +1,19 @@
+{
+  "name": "contabilidadPersonal",
+  "build": { "dockerfile": "Dockerfile" },
+  "remoteUser": "devuser",
+  "updateRemoteUserUID": true,
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  "workspaceFolder": "/workspace",
+  "runArgs": [
+    "--env-file",
+    "${localEnv:HOME}/.config/devharness/secrets.env",
+    "--env-file",
+    "${localEnv:HOME}/.config/project-secrets/contabilidadPersonal.env"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [ "anysphere.pyright", "ms-python.python", "ms-python.debugpy" ]
+    }
+  }
+}
