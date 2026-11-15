@@ -13,15 +13,29 @@ export function summaryTiles(resumen, { perspective = "admin" } = {}) {
     perspective === "self"
       ? s > 0 ? "Debes" : s < 0 ? "Saldo a tu favor" : "Estás al día"
       : s > 0 ? "Te debe" : s < 0 ? "Le debes" : "Al día";
+  const saldo = stat(
+    saldoLabel,
+    fmtMoney(Math.abs(s)),
+    resumen.ultimo_movimiento ? `Último movimiento: ${fmtDate(resumen.ultimo_movimiento)}` : null,
+    saldoTone(s),
+  );
+  const promedio = stat(
+    "Abono promedio",
+    resumen.promedio_abono == null ? "—" : fmtMoney(Math.round(resumen.promedio_abono)),
+    resumen.primer_movimiento ? `Desde ${fmtDate(resumen.primer_movimiento)}` : null,
+  );
+  if (perspective === "self") {
+    return h("div", { class: "stats stats-2" }, saldo, promedio);
+  }
   return h(
     "div",
     { class: "stats" },
-    stat(saldoLabel, fmtMoney(Math.abs(s)), resumen.ultimo_movimiento ? `Último movimiento: ${fmtDate(resumen.ultimo_movimiento)}` : null, saldoTone(s)),
+    saldo,
     stat("Total abonado", fmtMoney(resumen.total_abonos),
       resumen.ultimo_abono_fecha ? `Último: ${fmtMoney(resumen.ultimo_abono_monto)} · hace ${resumen.dias_desde_ultimo_abono} días` : "Sin abonos"),
     stat("Total cargado", fmtMoney(resumen.total_cargos),
       resumen.total_intereses ? `+ ${fmtMoney(resumen.total_intereses)} en intereses` : `${resumen.num_movimientos} movimientos`),
-    stat("Abono promedio", resumen.promedio_abono == null ? "—" : fmtMoney(Math.round(resumen.promedio_abono)), resumen.primer_movimiento ? `Desde ${fmtDate(resumen.primer_movimiento)}` : null),
+    promedio,
   );
 }
 

@@ -9,7 +9,7 @@ export function loginView(root, { navigate }) {
   const submit = h("button", { class: "btn btn-primary btn-block", type: "submit" }, "Ingresar");
   const form = h("form", { class: "auth-card card" },
     h("img", { src: "/icon.svg", alt: "", class: "auth-logo" }),
-    h("h1", {}, "Contabilidad personal"),
+    h("h1", {}, "Contabilidad"),
     h("p", { class: "muted" }, "Ingresa con tu usuario para ver tu estado de cuenta."),
     field("Usuario", user), field("Contraseña", pass), error, submit);
   form.addEventListener("submit", async (e) => {

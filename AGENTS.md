@@ -53,3 +53,9 @@ uv run ruff check src tests
 `src/api` (HTTP, rutas finas) → `src/services` (casos de uso + DTOs) → `src/ports` (Protocol) ←
 `src/db` (SQLite). Composition root: `src/core/dependencies.py`. Las rutas no importan `src.models`
 ni `src.db`.
+
+### Homelab
+
+La producción corre en el servidor `192.168.1.8`, en `/opt/contabilidadPersonal`.
+`data/` y `.env` no están en Git: un `git pull` no actualiza la base ni debe pisarla.
+Cómo actualizar, respaldar y restablecer claves: `docs/homelab.md`.
